@@ -1,25 +1,20 @@
 body{
-  background: #001e4d;
+  background: #221;
 }
 
-header{
-  border-radius: 20px;
-  background-color: Snow;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-}
 ul{
   list-style: none;
   margin: 0;
   padding: 20px;
   border-radius: 15px;
   }
-a{
-  font-size: 40px;
-  padding: 20px;
-  color: black;
-  text-decoration: none;
-  font-family: 'Noto Sans', sans-serif;
-}
+  a{
+    font-size: 30px;
+    padding: 20px;
+    color: #fff090;
+    text-decoration: none;
+    font-family: 'Press Start 2P';
+  }
 a:hover{
   color: #474a51;
   text-decoration: none;
@@ -30,38 +25,38 @@ li{
 h1{
   font-size: 40px;
   padding: 20px;
-  color: snow;
+  color:#4FAF44;;
   text-decoration: none;
-  font-family: 'Noto Sans', sans-serif;
+  font-family: 'Press Start 2P';
 }
 h2{
   font-size: 25px;
   padding: 10px;
-  color: #001e4d;
+  color: #fff090;
   text-decoration: none;
-  font-family: 'Noto Sans', sans-serif;
+  font-family: 'Press Start 2P';
   align-items: center;
 }
 div{
   border-radius: 20px;
-  background-color: Snow;
+  background-color: #221;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 iframe{
   font-size: 25px;
   padding: 10px;
-  color: #001e4d;
+  color: #221;
   text-decoration: none;
-  font-family: 'Noto Sans', sans-serif;
+  font-family: 'Press Start 2P';
   align-items: center;
   
 }
 .custom-text{
   font-size: 25px;
   padding: 10px;
-  color: #001e4d;
+  color: #221;
   text-decoration: none;
-  font-family: 'Noto Sans', sans-serif;
+  font-family: 'Press Start 2P';
   align-items: center;
 }
 
@@ -70,9 +65,9 @@ iframe{
   display: inline-block;
   padding: .75rem 1.25rem;
   border-radius: 10rem;
-  color: #ffffff;
+  color: #fff090;
   text-transform: uppercase;
-  font-size: 30px;
+  font-size: 25px;
   letter-spacing: .15rem;
   transition: all .3s;
   position: relative;
@@ -82,9 +77,9 @@ iframe{
 label{
   font-size: 25px;
   padding: 10px;
-  color: #ffffff;
+  color: #fff090;
   text-decoration: none;
-  font-family: 'Noto Sans', sans-serif;
+  font-family: 'Press Start 2P';
   align-items: center; 
 }
 #text1, #text2 {
