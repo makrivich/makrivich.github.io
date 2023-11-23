@@ -1,5 +1,5 @@
 body{
-  background: #001e4d;
+  background: #221;
 }
 
 header{
@@ -14,11 +14,11 @@ ul{
   border-radius: 15px;
   }
 a{
-  font-size: 40px;
+  font-size: 30px;
   padding: 20px;
-  color: black;
+  color: #fff090;
   text-decoration: none;
-  font-family: 'Noto Sans', sans-serif;
+  font-family: 'Press Start 2P';
 }
 a:hover{
   color: #474a51;
@@ -30,27 +30,27 @@ li{
 h1{
   font-size: 40px;
   padding: 20px;
-  color: snow;
+  color:#4FAF44;;
   text-decoration: none;
-  font-family: 'Noto Sans', sans-serif;
+  font-family: 'Press Start 2P';
 }
 h2{
   font-size: 25px;
   padding: 10px;
-  color: #001e4d;
+  color: #fff090;
   text-decoration: none;
-  font-family: 'Noto Sans', sans-serif;
+  font-family: 'Press Start 2P';
   align-items: center;
 }
 div{
   border-radius: 20px;
-  background-color: Snow;
+  background-color: #221;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 iframe{
   font-size: 25px;
   padding: 10px;
-  color: #001e4d;
+  color: #221;
   text-decoration: none;
   font-family: 'Noto Sans', sans-serif;
   align-items: center;
@@ -59,7 +59,7 @@ iframe{
 .custom-text{
   font-size: 25px;
   padding: 10px;
-  color: #001e4d;
+  color: #221;
   text-decoration: none;
   font-family: 'Noto Sans', sans-serif;
   align-items: center;
