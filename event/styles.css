@@ -1,0 +1,70 @@
+body {
+    font-family: Arial, sans-serif;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    background: url('https://images.pexels.com/photos/956981/milky-way-starry-sky-night-sky-star-956981.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1') no-repeat center center fixed;
+    background-size: cover;
+    color: white;
+}
+
+.quiz-container {
+    background: rgba(0, 0, 0, 0.7);
+    padding: 20px;
+    border-radius: 10px;
+    min-height: 300px;
+}
+
+.question {
+    display: none;
+}
+
+.question.active {
+    display: block;
+}
+
+button {
+    padding: 10px 20px;
+    margin: 5px;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #45a049;
+}
+
+#result {
+    font-weight: bold;
+    margin-top: 20px;
+    display: none;
+    text-align: center;
+}
+
+.navigation {
+    margin-top: 20px;
+}
+
+.feedback {
+    margin-top: 15px;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+.correct {
+    background: rgba(0, 255, 0, 0.3);
+}
+
+.incorrect {
+    background: rgba(255, 0, 0, 0.3);
+}
+
+input[type="text"] {
+    padding: 5px;
+    margin: 5px 0;
+    border-radius: 5px;
+    border: none;
+}
