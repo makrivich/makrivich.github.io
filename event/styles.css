@@ -15,6 +15,11 @@ body {
     min-height: 300px;
 }
 
+.intro-text {
+    margin-bottom: 20px;
+    line-height: 1.6;
+}
+
 .question {
     display: none;
 }
@@ -62,9 +67,26 @@ button:hover {
     background: rgba(255, 0, 0, 0.3);
 }
 
-input[type="text"] {
+input[type="text"],
+input[type="number"] {
     padding: 5px;
     margin: 5px 0;
     border-radius: 5px;
     border: none;
+}
+
+.options label {
+    display: block;
+    margin: 5px 0;
+}
+
+/* Стили для match, чтобы соответствовать фото */
+.match-option {
+    display: flex;
+    align-items: center;
+    margin: 5px 0;
+}
+
+.match-option input[type="radio"] {
+    margin-right: 10px;
 }
