@@ -139,9 +139,12 @@ function checkAnswer() {
     }
 }
 
-// Генерация 6-значного кода
-function generateCode() {
-    return Math.floor(100000 + Math.random() * 900000);
+// Генерация 6-значного кода с последней цифрой как количеством баллов
+function generateCode(score) {
+    // Генерируем 5 случайных цифр (от 10000 до 99999)
+    const baseNumber = Math.floor(10000 + Math.random() * 90000);
+    // Добавляем количество баллов как последнюю цифру
+    return `${baseNumber}${score}`;
 }
 
 // Показать результаты
@@ -155,7 +158,7 @@ function showResults() {
         }
     });
 
-    const uniqueCode = generateCode();
+    const uniqueCode = generateCode(score); // Передаем score в функцию
 
     quizContainer.style.display = 'none';
     prevButton.style.display = 'none';
