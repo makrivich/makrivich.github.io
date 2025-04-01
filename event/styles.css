@@ -3,7 +3,7 @@ body {
     max-width: 800px;
     margin: 0 auto;
     padding: 20px;
-    background: url('https://images.pexels.com/photos/956981/milky-way-starry-sky-night-sky-star-956981.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1') no-repeat center center fixed;
+    background: url('https://optlab.kourovka.ru/Astrophoto/M31.jpg') no-repeat center center fixed;
     background-size: cover;
     color: white;
 }
