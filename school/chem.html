@@ -3,42 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Подготовка по химии</title>
+    <title>Интерфейс с Drag and Drop</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
-            background-color: #d4f0d4; /* Пастельно-зеленый фон */
+            background-color: #d4f0d4;
         }
         .container {
             text-align: center;
+            width: 100%;
+            padding: 10px;
+            box-sizing: border-box;
         }
         .button-row, .text-row {
             margin: 10px 0;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
         }
         .button-row button {
-            padding: 10px 20px;
-            margin: 5px;
-            font-size: 16px;
+            padding: 10px 15px;
+            font-size: 14px;
             border: none;
             border-radius: 10px;
             cursor: move;
             color: white;
+            touch-action: none; /* Отключаем стандартное поведение на сенсорных устройствах */
+        }
+        .text-row .input-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
         .text-row input {
-            padding: 10px;
-            margin: 5px;
-            width: 100px;
+            padding: 8px;
+            width: 80px;
+            font-size: 14px;
             border: 1px solid #ccc;
             border-radius: 5px;
+            margin-top: 5px;
         }
         .text-row label {
-            display: block;
-            margin: 5px 0;
+            font-size: 14px;
         }
         .submit-row {
             margin-top: 20px;
@@ -58,6 +70,16 @@
         .light-green { background-color: #90ee90; }
         .dragging { opacity: 0.5; }
         .drop-target { border: 2px dashed #ccc; }
+
+        @media (max-width: 600px) {
+            .button-row button, .text-row input {
+                font-size: 12px;
+                padding: 8px;
+            }
+            .text-row input {
+                width: 60px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -73,7 +95,6 @@
     </div>
 
     <script>
-        // Данные углеводородов
         const hydrocarbons = [
             { formula: "CH4", name: "метан" },
             { formula: "C2H6", name: "этан" },
@@ -87,7 +108,6 @@
             { formula: "C10H22", name: "декан" }
         ];
 
-        // Функция для перемешивания массива
         function shuffle(array) {
             for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -96,10 +116,8 @@
             return array;
         }
 
-        // Цвета для кнопок
         const colors = ['blue', 'red', 'orange', 'green', 'purple', 'light-blue', 'light-green', 'blue', 'orange', 'purple'];
 
-        // Инициализация интерфейса
         function initInterface() {
             const shuffledHydrocarbons = shuffle([...hydrocarbons]);
             const buttonRow1 = document.getElementById('buttonRow1');
@@ -107,54 +125,51 @@
             const textRow1 = document.getElementById('textRow1');
             const textRow2 = document.getElementById('textRow2');
 
-            // Очищаем строки
             buttonRow1.innerHTML = '';
             buttonRow2.innerHTML = '';
             textRow1.innerHTML = '';
             textRow2.innerHTML = '';
 
-            // Разделяем кнопки и поля на две строки
             shuffledHydrocarbons.forEach((item, index) => {
-                // Создаем кнопку
                 const button = document.createElement('button');
                 button.textContent = item.name;
-                button.draggable = true;
                 button.classList.add(colors[index]);
 
-                // Создаем поле ввода с меткой
+                const wrapper = document.createElement('div');
+                wrapper.classList.add('input-wrapper');
                 const label = document.createElement('label');
                 label.textContent = item.formula;
                 const input = document.createElement('input');
                 input.type = 'text';
                 input.classList.add('drop-target');
-                input.dataset.correctAnswer = item.name; // Сохраняем правильный ответ
+                input.dataset.correctAnswer = item.name;
+
+                wrapper.appendChild(label);
+                wrapper.appendChild(input);
 
                 if (index < 5) {
                     buttonRow1.appendChild(button);
-                    textRow1.appendChild(label);
-                    textRow1.appendChild(input);
+                    textRow1.appendChild(wrapper);
                 } else {
                     buttonRow2.appendChild(button);
-                    textRow2.appendChild(label);
-                    textRow2.appendChild(input);
+                    textRow2.appendChild(wrapper);
                 }
             });
 
-            // Добавляем обработчики событий
             addEventListeners();
         }
 
-        // Добавление обработчиков событий
         function addEventListeners() {
-            const buttons = document.querySelectorAll('button[draggable="true"]');
+            const buttons = document.querySelectorAll('button');
             const inputs = document.querySelectorAll('input.drop-target');
 
+            // Drag-and-Drop для десктопов
             buttons.forEach(button => {
+                button.draggable = true;
                 button.addEventListener('dragstart', (e) => {
                     e.dataTransfer.setData('text/plain', button.textContent);
                     button.classList.add('dragging');
                 });
-
                 button.addEventListener('dragend', () => {
                     button.classList.remove('dragging');
                 });
@@ -164,25 +179,55 @@
                 input.addEventListener('dragover', (e) => {
                     e.preventDefault();
                 });
-
                 input.addEventListener('drop', (e) => {
                     e.preventDefault();
                     const data = e.dataTransfer.getData('text/plain');
                     input.value = data;
                 });
             });
+
+            // Touch события для мобильных устройств
+            buttons.forEach(button => {
+                button.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    button.classList.add('dragging');
+                    const touch = e.touches[0];
+                    button.dataset.startX = touch.clientX;
+                    button.dataset.startY = touch.clientY;
+                });
+
+                button.addEventListener('touchmove', (e) => {
+                    e.preventDefault();
+                    const touch = e.touches[0];
+                    button.style.position = 'absolute';
+                    button.style.left = `${touch.clientX - button.offsetWidth / 2}px`;
+                    button.style.top = `${touch.clientY - button.offsetHeight / 2}px`;
+                });
+
+                button.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    button.classList.remove('dragging');
+                    const touch = e.changedTouches[0];
+                    const dropTarget = document.elementFromPoint(touch.clientX, touch.clientY);
+                    if (dropTarget && dropTarget.classList.contains('drop-target')) {
+                        dropTarget.value = button.textContent;
+                    }
+                    button.style.position = '';
+                    button.style.left = '';
+                    button.style.top = '';
+                });
+            });
         }
 
-        // Проверка правильности ответов
         function checkAnswers() {
             const inputs = document.querySelectorAll('input.drop-target');
             let correctCount = 0;
             let result = [];
 
             inputs.forEach(input => {
-                const formula = input.previousElementSibling.textContent; // Формула из label
-                const userAnswer = input.value.trim(); // Ответ пользователя
-                const correctAnswer = input.dataset.correctAnswer; // Правильный ответ из dataset
+                const formula = input.previousElementSibling.textContent;
+                const userAnswer = input.value.trim();
+                const correctAnswer = input.dataset.correctAnswer;
 
                 if (userAnswer === correctAnswer) {
                     result.push(`${formula}: ${userAnswer} - Правильно`);
@@ -196,7 +241,6 @@
             alert(`Результат проверки:\n${result.join('\n')}\n\n${summary}`);
         }
 
-        // Отправка ответов
         function submitAnswers() {
             const inputs = document.querySelectorAll('input.drop-target');
             let answers = [];
@@ -206,7 +250,6 @@
             alert('Ваши ответы:\n' + answers.join('\n'));
         }
 
-        // Инициализация при загрузке страницы
         window.onload = initInterface;
     </script>
 </body>
