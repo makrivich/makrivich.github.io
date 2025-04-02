@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Подготовка по химии</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #d4f0d4; /* Пастельно-зеленый фон */
+        }
+        .container {
+            text-align: center;
+        }
+        .button-row, .text-row {
+            margin: 10px 0;
+        }
+        .button-row button {
+            padding: 10px 20px;
+            margin: 5px;
+            font-size: 16px;
+            border: none;
+            border-radius: 10px;
+            cursor: move;
+            color: white;
+        }
+        .text-row input {
+            padding: 10px;
+            margin: 5px;
+            width: 100px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .text-row label {
+            display: block;
+            margin: 5px 0;
+        }
+        .submit-row {
+            margin-top: 20px;
+        }
+        .submit-row button {
+            padding: 10px 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .blue { background-color: #1e90ff; }
+        .red { background-color: #ff4500; }
+        .orange { background-color: #ff8c00; }
+        .green { background-color: #32cd32; }
+        .purple { background-color: #9932cc; }
+        .light-blue { background-color: #00b7eb; }
+        .light-green { background-color: #90ee90; }
+        .dragging { opacity: 0.5; }
+        .drop-target { border: 2px dashed #ccc; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="button-row" id="buttonRow1"></div>
+        <div class="button-row" id="buttonRow2"></div>
+        <div class="text-row" id="textRow1"></div>
+        <div class="text-row" id="textRow2"></div>
+        <div class="submit-row">
+            <button onclick="checkAnswers()">ПРОВЕРИТЬ</button>
+            <button onclick="submitAnswers()">ОТПРАВИТЬ ОТВЕТЫ</button>
+        </div>
+    </div>
+
+    <script>
+        // Данные углеводородов
+        const hydrocarbons = [
+            { formula: "CH4", name: "метан" },
+            { formula: "C2H6", name: "этан" },
+            { formula: "C3H8", name: "пропан" },
+            { formula: "C4H10", name: "бутан" },
+            { formula: "C5H12", name: "пентан" },
+            { formula: "C6H14", name: "гексан" },
+            { formula: "C7H16", name: "гептан" },
+            { formula: "C8H18", name: "октан" },
+            { formula: "C9H20", name: "нонан" },
+            { formula: "C10H22", name: "декан" }
+        ];
+
+        // Функция для перемешивания массива
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        // Цвета для кнопок
+        const colors = ['blue', 'red', 'orange', 'green', 'purple', 'light-blue', 'light-green', 'blue', 'orange', 'purple'];
+
+        // Инициализация интерфейса
+        function initInterface() {
+            const shuffledHydrocarbons = shuffle([...hydrocarbons]);
+            const buttonRow1 = document.getElementById('buttonRow1');
+            const buttonRow2 = document.getElementById('buttonRow2');
+            const textRow1 = document.getElementById('textRow1');
+            const textRow2 = document.getElementById('textRow2');
+
+            // Очищаем строки
+            buttonRow1.innerHTML = '';
+            buttonRow2.innerHTML = '';
+            textRow1.innerHTML = '';
+            textRow2.innerHTML = '';
+
+            // Разделяем кнопки и поля на две строки
+            shuffledHydrocarbons.forEach((item, index) => {
+                // Создаем кнопку
+                const button = document.createElement('button');
+                button.textContent = item.name;
+                button.draggable = true;
+                button.classList.add(colors[index]);
+
+                // Создаем поле ввода с меткой
+                const label = document.createElement('label');
+                label.textContent = item.formula;
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.classList.add('drop-target');
+                input.dataset.correctAnswer = item.name; // Сохраняем правильный ответ
+
+                if (index < 5) {
+                    buttonRow1.appendChild(button);
+                    textRow1.appendChild(label);
+                    textRow1.appendChild(input);
+                } else {
+                    buttonRow2.appendChild(button);
+                    textRow2.appendChild(label);
+                    textRow2.appendChild(input);
+                }
+            });
+
+            // Добавляем обработчики событий
+            addEventListeners();
+        }
+
+        // Добавление обработчиков событий
+        function addEventListeners() {
+            const buttons = document.querySelectorAll('button[draggable="true"]');
+            const inputs = document.querySelectorAll('input.drop-target');
+
+            buttons.forEach(button => {
+                button.addEventListener('dragstart', (e) => {
+                    e.dataTransfer.setData('text/plain', button.textContent);
+                    button.classList.add('dragging');
+                });
+
+                button.addEventListener('dragend', () => {
+                    button.classList.remove('dragging');
+                });
+            });
+
+            inputs.forEach(input => {
+                input.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                });
+
+                input.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    const data = e.dataTransfer.getData('text/plain');
+                    input.value = data;
+                });
+            });
+        }
+
+        // Проверка правильности ответов
+        function checkAnswers() {
+            const inputs = document.querySelectorAll('input.drop-target');
+            let correctCount = 0;
+            let result = [];
+
+            inputs.forEach(input => {
+                const formula = input.previousElementSibling.textContent; // Формула из label
+                const userAnswer = input.value.trim(); // Ответ пользователя
+                const correctAnswer = input.dataset.correctAnswer; // Правильный ответ из dataset
+
+                if (userAnswer === correctAnswer) {
+                    result.push(`${formula}: ${userAnswer} - Правильно`);
+                    correctCount++;
+                } else {
+                    result.push(`${formula}: ${userAnswer || 'Пусто'} - Неправильно (правильный ответ: ${correctAnswer})`);
+                }
+            });
+
+            const summary = correctCount === inputs.length ? 'Все верно!' : `Правильных ответов: ${correctCount} из ${inputs.length}`;
+            alert(`Результат проверки:\n${result.join('\n')}\n\n${summary}`);
+        }
+
+        // Отправка ответов
+        function submitAnswers() {
+            const inputs = document.querySelectorAll('input.drop-target');
+            let answers = [];
+            inputs.forEach(input => {
+                answers.push(input.value || 'Пусто');
+            });
+            alert('Ваши ответы:\n' + answers.join('\n'));
+        }
+
+        // Инициализация при загрузке страницы
+        window.onload = initInterface;
+    </script>
+</body>
+</html>
