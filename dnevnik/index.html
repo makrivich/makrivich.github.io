@@ -94,8 +94,13 @@
             
             // Массив дней недели для соответствия с таблицей
             const days = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
-            const currentDay = days[today];
-            console.log('Текущий день:', currentDay); // Для отладки
+            
+            // Если сегодня воскресенье (0), переключаемся на понедельник (1)
+            const displayDayIndex = today === 0 ? 1 : today;
+            const currentDay = days[displayDayIndex];
+            
+            console.log('Текущий день (индекс):', today); // Для отладки
+            console.log('Отображаемый день:', currentDay); // Для отладки
 
             // Находим индекс столбца для текущего дня
             const headerRow = data[0] || [];
@@ -109,7 +114,11 @@
             }
 
             // Создаем таблицу
-            let html = `<h2>${currentDay}</h2><table>`;
+            let html = `<h2>${currentDay}</h2>`;
+            if (today === 0) {
+                html += `<p style="text-align: center; color: #555;">Сегодня воскресенье, показываем расписание на понедельник.</p>`;
+            }
+            html += `<table>`;
             html += `
                 <tr>
                     <th>Урок</th>
