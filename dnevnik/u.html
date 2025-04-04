@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Расписание</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            max-width: 800px;
+            margin: 20px auto;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        h1, h2 {
+            text-align: center;
+        }
+        .no-lesson {
+            color: #888;
+            font-style: italic;
+        }
+        .error {
+            color: red;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <h1>Расписание</h1>
+    <div id="schedule"></div>
+
+    <script>
+        // URL вашей Google Sheets в формате CSV
+        const SHEET_URL = 'https://docs.google.com/spreadsheets/d/1lWqIJaWWXceiE_CWyIdzMRLcRoQa-ulnT5tJfgLDo0o/export?format=csv';
+
+        async function fetchSchedule() {
+            try {
+                const response = await fetch(SHEET_URL);
+                if (!response.ok) {
+                    throw new Error('Не удалось загрузить данные: ' + response.status);
+                }
+                const text = await response.text();
+                console.log('Полученные данные (сырой CSV):', text); // Для отладки
+                const data = parseCSV(text);
+                console.log('Распарсенные данные:', data); // Для отладки
+                displaySchedule(data);
+            } catch (error) {
+                console.error('Ошибка загрузки данных:', error);
+                document.getElementById('schedule').innerHTML = `<p class="error">Ошибка загрузки расписания: ${error.message}</p>`;
+            }
+        }
+
+        function parseCSV(text) {
+            // Улучшенный парсинг CSV, чтобы учитывать запятые внутри кавычек
+            const rows = [];
+            let currentRow = [];
+            let currentCell = '';
+            let insideQuotes = false;
+
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+                if (char === '"') {
+                    insideQuotes = !insideQuotes;
+                } else if (char === ',' && !insideQuotes) {
+                    currentRow.push(currentCell.trim());
+                    currentCell = '';
+                } else if (char === '\n' && !insideQuotes) {
+                    currentRow.push(currentCell.trim());
+                    rows.push(currentRow);
+                    currentRow = [];
+                    currentCell = '';
+                } else {
+                    currentCell += char;
+                }
+            }
+            // Добавляем последнюю ячейку и строку
+            if (currentCell || currentRow.length > 0) {
+                currentRow.push(currentCell.trim());
+                rows.push(currentRow);
+            }
+            return rows;
+        }
+
+        function displaySchedule(data) {
+            // Получаем текущую дату
+            const today = new Date().getDay(); // 0 - воскресенье, 1 - понедельник, ..., 6 - суббота
+            
+            // Массив дней недели для соответствия с таблицей
+            const days = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
+            const currentDay = days[today];
+            console.log('Текущий день:', currentDay); // Для отладки
+
+            // Находим индекс столбца для текущего дня
+            const headerRow = data[0] || [];
+            console.log('Заголовки таблицы:', headerRow); // Для отладки
+            const dayIndex = headerRow.indexOf(currentDay);
+
+            if (dayIndex === -1) {
+                console.log('Дни в таблице:', headerRow); // Для отладки
+                document.getElementById('schedule').innerHTML = `<p class="error">Данные для текущего дня (${currentDay}) не найдены</p>`;
+                return;
+            }
+
+            // Создаем таблицу
+            let html = `<h2>${currentDay}</h2><table>`;
+            html += `
+                <tr>
+                    <th>Урок</th>
+                    <th>Предмет</th>
+                </tr>
+            `;
+
+            // Добавляем строки с расписанием
+            for (let i = 1; i < data.length; i++) {
+                const lesson = data[i][0] || ''; // Номер урока
+                const subject = data[i][dayIndex] || ''; // Предмет
+
+                if (lesson) { // Проверяем, что строка не пустая
+                    html += `
+                        <tr>
+                            <td>${lesson}</td>
+                            <td>${subject || '<span class="no-lesson">Нет урока</span>'}</td>
+                        </tr>
+                    `;
+                }
+            }
+            
+            html += '</table>';
+            document.getElementById('schedule').innerHTML = html;
+        }
+
+        // Загружаем расписание при загрузке страницы
+        fetchSchedule();
+
+        // Обновляем каждые 5 минут (300000 мс)
+        setInterval(fetchSchedule, 300000);
+    </script>
+</body>
+</html>
