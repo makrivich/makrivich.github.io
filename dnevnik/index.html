@@ -30,6 +30,10 @@
             color: red;
             text-align: center;
         }
+        .info {
+            text-align: center;
+            color: #555;
+        }
     </style>
 </head>
 <body>
@@ -88,18 +92,52 @@
             return rows;
         }
 
+        function getDayWithTimeShift() {
+            // Получаем текущую дату и время в UTC
+            const now = new Date();
+            const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000); // Время в UTC
+
+            // Добавляем смещение для UTC+5 (5 часов = 5 * 60 * 60 * 1000 миллисекунд)
+            const utcPlus5Time = new Date(utcTime + (5 * 60 * 60 * 1000));
+
+            // Получаем текущий день недели (0 - воскресенье, 1 - понедельник, ..., 6 - суббота)
+            let dayIndex = utcPlus5Time.getDay();
+
+            // Получаем часы и минуты в UTC+5
+            const hours = utcPlus5Time.getHours();
+            const minutes = utcPlus5Time.getMinutes();
+            console.log('Текущее время в UTC+5:', `${hours}:${minutes}`); // Для отладки
+
+            // Если сегодня воскресенье, всегда показываем понедельник
+            if (dayIndex === 0) {
+                return {
+                    displayDayIndex: 1, // Понедельник
+                    isSunday: true
+                };
+            }
+
+            // Проверяем, после 16:00 ли сейчас
+            const isAfter16 = (hours > 16) || (hours === 16 && minutes >= 0);
+
+            // Если после 16:00, увеличиваем день на 1 (кроме воскресенья, уже обработано выше)
+            if (isAfter16) {
+                dayIndex = (dayIndex + 1) % 7; // Следующий день, с учетом цикла недели
+            }
+
+            return {
+                displayDayIndex: dayIndex,
+                isSunday: false
+            };
+        }
+
         function displaySchedule(data) {
-            // Получаем текущую дату
-            const today = new Date().getDay(); // 0 - воскресенье, 1 - понедельник, ..., 6 - суббота
+            // Получаем день с учетом времени
+            const { displayDayIndex, isSunday } = getDayWithTimeShift();
             
             // Массив дней недели для соответствия с таблицей
             const days = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
-            
-            // Если сегодня воскресенье (0), переключаемся на понедельник (1)
-            const displayDayIndex = today === 0 ? 1 : today;
             const currentDay = days[displayDayIndex];
             
-            console.log('Текущий день (индекс):', today); // Для отладки
             console.log('Отображаемый день:', currentDay); // Для отладки
 
             // Находим индекс столбца для текущего дня
@@ -115,8 +153,8 @@
 
             // Создаем таблицу
             let html = `<h2>${currentDay}</h2>`;
-            if (today === 0) {
-                html += `<p style="text-align: center; color: #555;">Сегодня воскресенье, поэтому расписание на понедельник.</p>`;
+            if (isSunday) {
+                html += `<p class="info">Сегодня воскресенье, показываем расписание на понедельник.</p>`;
             }
             html += `<table>`;
             html += `
@@ -149,7 +187,7 @@
         fetchSchedule();
 
         // Обновляем каждые 5 минут (300000 мс)
-        setInterval(fetchSchedule, 3600000);
+        setInterval(fetchSchedule, 300000);
     </script>
 </body>
 </html>
