@@ -42,23 +42,42 @@ const quizData = [
         type: "radio",
         options: [
             "Область между Марсом и Юпитером с множеством астероидов",
-            "Звезда в центре Солнечной системы",
-            "Область с сильной гравитацией"
+            "Область вокруг Солнца",
+            "Скопление звезд в Млечном Пути"
         ],
         correct: "Область между Марсом и Юпитером с множеством астероидов"
     },
     {
         question: "Соотнесите объекты с их описаниями",
         type: "match",
-        pairs: [
-            { object: "Черная дыра", description: "Область с сильной гравитацией в центре Млечного Пути" },
-            { object: "Экзопланета", description: "Планета за пределами Солнечной системы" },
-            { object: "Пояс астероидов", description: "Область между Марсом и Юпитером" }
-        ],
-        correct: [
-            "Черная дыра - Область с сильной гравитацией в центре Млечного Пути",
-            "Экзопланета - Планета за пределами Солнечной системы",
-            "Пояс астероидов - Область между Марсом и Юпитером"
+        matches: [
+            {
+                item: "Черная дыра — Стрелец A*",
+                options: [
+                    "Область с сильной гравитацией в центре Млечного Пути",
+                    "Планета за пределами Солнечной системы",
+                    "Область между Марсом и Юпитером"
+                ],
+                correct: "Область с сильной гравитацией в центре Млечного Пути"
+            },
+            {
+                item: "Экзопланета",
+                options: [
+                    "Область с сильной гравитацией в центре Млечного Пути",
+                    "Планета за пределами Солнечной системы",
+                    "Область между Марсом и Юпитером"
+                ],
+                correct: "Планета за пределами Солнечной системы"
+            },
+            {
+                item: "Пояс астероидов",
+                options: [
+                    "Область с сильной гравитацией в центре Млечного Пути",
+                    "Планета за пределами Солнечной системы",
+                    "Область между Марсом и Юпитером"
+                ],
+                correct: "Область между Марсом и Юпитером"
+            }
         ]
     },
     {
@@ -73,18 +92,33 @@ const quizData = [
     }
 ];
 
+// Функция для случайного перемешивания массива (алгоритм Фишера-Йетса)
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[i], array[j]]; // Меняем элементы местами
+    }
+    return array;
+}
+
+// Перемешиваем вопросы перед началом викторины
+const shuffledQuizData = shuffleArray([...quizData]);
+
 const quizContainer = document.getElementById('quiz');
 const resultContainer = document.getElementById('result');
+const introContainer = document.getElementById('intro');
+const navigationContainer = document.querySelector('.navigation');
 const prevButton = document.getElementById('prev');
 const checkButton = document.getElementById('check');
 const nextButton = document.getElementById('next');
+const startButton = document.getElementById('start-quiz');
 let currentQuestion = 0;
 let answers = {};
 
 // Создание викторины
 function buildQuiz() {
     const output = [];
-    quizData.forEach((item, index) => {
+    shuffledQuizData.forEach((item, index) => {
         let content = '';
         if (item.type === "radio") {
             content = item.options.map(option => `
@@ -113,12 +147,13 @@ function buildQuiz() {
                 <input type="text" id="date-answer${index}" placeholder="Введите дату (например, 04.10.1957)">
             `;
         } else if (item.type === "match") {
-            content = item.pairs.map(pair => `
-                <div class="match-pair">
-                    <p>${pair.object}</p>
-                    <select name="match${index}-${pair.object}">
-                        ${item.pairs.map(p => `
-                            <option value="${p.object} - ${p.description}">${p.description}</option>
+            content = item.matches.map((match, subIndex) => `
+                <div class="match-subquestion">
+                    <p>${match.item}</p>
+                    <select name="match${index}-${subIndex}">
+                        <option value="">Выберите описание...</option>
+                        ${match.options.map(option => `
+                            <option value="${option}">${option}</option>
                         `).join('')}
                     </select>
                 </div>
@@ -144,7 +179,7 @@ function showQuestion(index) {
 
     prevButton.style.display = currentQuestion === 0 ? 'none' : 'inline';
     checkButton.style.display = answers[currentQuestion] ? 'none' : 'inline';
-    nextButton.style.display = answers[currentQuestion] && currentQuestion < quizData.length - 1 ? 'inline' : 'none';
+    nextButton.style.display = answers[currentQuestion] && currentQuestion < shuffledQuizData.length - 1 ? 'inline' : 'none';
 
     updateFeedback();
 }
@@ -155,20 +190,22 @@ function updateFeedback() {
     const feedback = currentQ.querySelector('.feedback');
     if (answers[currentQuestion]) {
         const selected = answers[currentQuestion];
-        const correct = quizData[currentQuestion].correct;
+        const correct = shuffledQuizData[currentQuestion].type === "match" 
+            ? shuffledQuizData[currentQuestion].matches.map(m => m.correct) 
+            : shuffledQuizData[currentQuestion].correct;
         let isCorrect = false;
 
-        if (quizData[currentQuestion].type === "radio" || quizData[currentQuestion].type === "text" || 
-            quizData[currentQuestion].type === "number") {
+        if (shuffledQuizData[currentQuestion].type === "radio" || shuffledQuizData[currentQuestion].type === "text" || 
+            shuffledQuizData[currentQuestion].type === "number") {
             isCorrect = selected === correct;
-        } else if (quizData[currentQuestion].type === "date") {
+        } else if (shuffledQuizData[currentQuestion].type === "date") {
             const normalizedSelected = selected.replace(/\s/g, '').toLowerCase();
             const normalizedCorrect = correct.replace(/\s/g, '').toLowerCase();
             isCorrect = normalizedSelected === normalizedCorrect;
-        } else if (quizData[currentQuestion].type === "checkbox") {
+        } else if (shuffledQuizData[currentQuestion].type === "checkbox") {
             isCorrect = JSON.stringify(selected.sort()) === JSON.stringify(correct.sort());
-        } else if (quizData[currentQuestion].type === "match") {
-            isCorrect = JSON.stringify(selected.sort()) === JSON.stringify(correct.sort());
+        } else if (shuffledQuizData[currentQuestion].type === "match") {
+            isCorrect = JSON.stringify(selected) === JSON.stringify(correct);
         }
 
         feedback.className = 'feedback ' + (isCorrect ? 'correct' : 'incorrect');
@@ -186,21 +223,21 @@ function checkAnswer() {
     const currentQ = document.querySelector(`.question[data-number="${currentQuestion}"]`);
     let selected;
 
-    if (quizData[currentQuestion].type === "radio") {
+    if (shuffledQuizData[currentQuestion].type === "radio") {
         selected = currentQ.querySelector(`input[name=question${currentQuestion}]:checked`);
         if (!selected) {
             alert('Пожалуйста, выберите ответ!');
             return;
         }
         answers[currentQuestion] = selected.value;
-    } else if (quizData[currentQuestion].type === "text") {
+    } else if (shuffledQuizData[currentQuestion].type === "text") {
         selected = currentQ.querySelector(`#text-answer${currentQuestion}`).value.trim();
         if (!selected) {
             alert('Пожалуйста, введите ответ!');
             return;
         }
         answers[currentQuestion] = selected;
-    } else if (quizData[currentQuestion].type === "checkbox") {
+    } else if (shuffledQuizData[currentQuestion].type === "checkbox") {
         selected = Array.from(currentQ.querySelectorAll(`input[name=question${currentQuestion}]:checked`))
             .map(input => input.value);
         if (selected.length === 0) {
@@ -208,108 +245,116 @@ function checkAnswer() {
             return;
         }
         answers[currentQuestion] = selected;
-    } else if (quizData[currentQuestion].type === "number") {
+    } else if (shuffledQuizData[currentQuestion].type === "number") {
         selected = currentQ.querySelector(`#number-answer${currentQuestion}`).value.trim();
         if (!selected) {
             alert('Пожалуйста, введите число!');
             return;
         }
         answers[currentQuestion] = selected;
-    } else if (quizData[currentQuestion].type === "date") {
+    } else if (shuffledQuizData[currentQuestion].type === "date") {
         selected = currentQ.querySelector(`#date-answer${currentQuestion}`).value.trim();
         if (!selected) {
             alert('Пожалуйста, введите дату!');
             return;
         }
         answers[currentQuestion] = selected;
-    } else if (quizData[currentQuestion].type === "match") {
+    } else if (shuffledQuizData[currentQuestion].type === "match") {
         selected = [];
-        quizData[currentQuestion].pairs.forEach(pair => {
-            const select = currentQ.querySelector(`select[name="match${currentQuestion}-${pair.object}"]`);
-            if (!select.value) {
-                alert('Пожалуйста, выберите соответствие для всех объектов!');
-                return;
+        shuffledQuizData[currentQuestion].matches.forEach((match, subIndex) => {
+            const selectedOption = currentQ.querySelector(`select[name=match${currentQuestion}-${subIndex}]`).value;
+            if (!selectedOption) {
+                alert(`Пожалуйста, выберите описание для "${match.item}"!`);
+                throw new Error('Missing selection');
             }
-            selected.push(select.value);
+            selected.push(selectedOption);
         });
-        if (selected.length !== quizData[currentQuestion].pairs.length) return;
         answers[currentQuestion] = selected;
     }
 
     updateFeedback();
 
     checkButton.style.display = 'none';
-    if (currentQuestion < quizData.length - 1) {
+    if (currentQuestion < shuffledQuizData.length - 1) {
         nextButton.style.display = 'inline';
     } else {
         setTimeout(showResults, 1000);
     }
 }
 
-// Генерация 6-значного кода с баллами
+// Генерация кода с учетом баллов (одна цифра)
 function generateCode(score) {
-    const formattedScore = score < 10 ? `0${score}` : `${score}`; // Форматирование баллов: 5 → 05, 10 → 10
-    return `${Math.floor(100000 + Math.random() * 900000)}${formattedScore}`;
-}
-
-// Функция для копирования текста в буфер обмена
-function copyToClipboard(text) {
-    navigator.clipboard.writeText(text).then(() => {
-        alert('Код скопирован в буфер обмена!');
-    }).catch(err => {
-        console.error('Ошибка при копировании: ', err);
-        alert('Не удалось скопировать код. Пожалуйста, скопируйте его вручную.');
-    });
+    const baseCode = Math.floor(100000 + Math.random() * 900000); // 6-значный код
+    return `${baseCode}${score}`; // Код + одна цифра баллов
 }
 
 // Показать результаты
 function showResults() {
     let score = 0;
-    quizData.forEach((question, index) => {
+    shuffledQuizData.forEach((question, index) => {
         if (question.type === "radio" || question.type === "text" || question.type === "number") {
             if (answers[index] === question.correct) score++;
         } else if (question.type === "date") {
             const normalizedAnswer = answers[index]?.replace(/\s/g, '').toLowerCase();
             const normalizedCorrect = question.correct.replace(/\s/g, '').toLowerCase();
             if (normalizedAnswer === normalizedCorrect) score++;
-        } else if (question.type === "checkbox" || question.type === "match") {
+        } else if (question.type === "checkbox") {
             if (JSON.stringify(answers[index]?.sort()) === JSON.stringify(question.correct.sort())) score++;
+        } else if (question.type === "match") {
+            const correctAnswers = question.matches.map(m => m.correct);
+            if (JSON.stringify(answers[index]) === JSON.stringify(correctAnswers)) score++;
         }
     });
 
     const uniqueCode = generateCode(score);
 
     quizContainer.style.display = 'none';
-    prevButton.style.display = 'none';
-    checkButton.style.display = 'none';
-    nextButton.style.display = 'none';
+    navigationContainer.style.display = 'none';
     resultContainer.style.display = 'block';
 
     resultContainer.innerHTML = `
-        Викторина завершена! Вы набрали ${score} из ${quizData.length} баллов! Для того, чтобы отметиться о прохождении викторины заполните форму.
+        Викторина завершена! Вы набрали ${score} из ${shuffledQuizData.length} баллов!
         <br><br>
         Ваш уникальный код: <strong id="unique-code">${uniqueCode}</strong>
-        <button id="copy-code-btn" style="margin-left: 10px;">Скопировать код</button>
+        <button id="copy-code">Скопировать код</button>
         <br><br>
         <div id="yandex-form-container">
             <iframe src="https://docs.google.com/forms/d/e/1FAIpQLSc46otjgrk50k1CsN0_IX1nXHKPcuPpA7w6T_4BSjxjzTJJ5g/viewform?embedded=true" width="640" height="720" frameborder="0" marginheight="0" marginwidth="0">Загрузка…</iframe>
         </div>
     `;
 
+    // Добавляем обработчик для кнопки копирования
+    document.getElementById('copy-code').addEventListener('click', () => {
+        const code = document.getElementById('unique-code').textContent;
+        navigator.clipboard.writeText(code).then(() => {
+            alert('Код скопирован в буфер обмена!');
+        }).catch(err => {
+            alert('Ошибка при копировании: ' + err);
+        });
+    });
+
     const script = document.createElement('script');
     script.src = 'https://forms.yandex.ru/_static/embed.js';
     document.body.appendChild(script);
-
-    // Добавляем обработчик для кнопки копирования
-    document.getElementById('copy-code-btn').addEventListener('click', () => {
-        copyToClipboard(uniqueCode);
-    });
 }
 
 // Инициализация
 buildQuiz();
 
 // События
+startButton.addEventListener('click', () => {
+    introContainer.style.display = 'none';
+    quizContainer.style.display = 'block';
+    navigationContainer.style.display = 'block';
+    showQuestion(0);
+});
+
 prevButton.addEventListener('click', () => showQuestion(currentQuestion - 1));
-checkButton.addEventListener('click', checkAnswer);
+checkButton.addEventListener('click', () => {
+    try {
+        checkAnswer();
+    } catch (e) {
+        // Останавливаем выполнение, если пользователь не выбрал ответ в match
+    }
+});
 nextButton.addEventListener('click', () => showQuestion(currentQuestion + 1));
