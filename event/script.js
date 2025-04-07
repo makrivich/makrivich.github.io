@@ -94,15 +94,13 @@ const quizData = [
 
 // Функция для случайного перемешивания массива (алгоритм Фишера-Йетса)
 function shuffleArray(array) {
-    for (let i = array.length - 1; i > 0; i--) {
+    const shuffled = [...array]; // Создаем копию массива
+    for (let i = shuffled.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[i], array[j]]; // Меняем элементы местами
+        [shuffled[i], shuffled[j]] = [shuffled[i], shuffled[j]]; // Меняем элементы местами
     }
-    return array;
+    return shuffled;
 }
-
-// Перемешиваем вопросы перед началом викторины
-const shuffledQuizData = shuffleArray([...quizData]);
 
 const quizContainer = document.getElementById('quiz');
 const resultContainer = document.getElementById('result');
@@ -114,9 +112,13 @@ const nextButton = document.getElementById('next');
 const startButton = document.getElementById('start-quiz');
 let currentQuestion = 0;
 let answers = {};
+let shuffledQuizData = []; // Перемешанный массив вопросов
 
 // Создание викторины
 function buildQuiz() {
+    // Перемешиваем вопросы перед созданием викторины
+    shuffledQuizData = shuffleArray(quizData);
+
     const output = [];
     shuffledQuizData.forEach((item, index) => {
         let content = '';
@@ -224,7 +226,7 @@ function checkAnswer() {
     let selected;
 
     if (shuffledQuizData[currentQuestion].type === "radio") {
-        selected = currentQ.querySelector(`input[name=question${currentQuestion}]:checked`);
+        selected = currentQ.querySelector(`input[name="question${currentQuestion}"]:checked`);
         if (!selected) {
             alert('Пожалуйста, выберите ответ!');
             return;
@@ -238,7 +240,7 @@ function checkAnswer() {
         }
         answers[currentQuestion] = selected;
     } else if (shuffledQuizData[currentQuestion].type === "checkbox") {
-        selected = Array.from(currentQ.querySelectorAll(`input[name=question${currentQuestion}]:checked`))
+        selected = Array.from(currentQ.querySelectorAll(`input[name="question${currentQuestion}"]:checked`))
             .map(input => input.value);
         if (selected.length === 0) {
             alert('Пожалуйста, выберите хотя бы один вариант!');
@@ -261,14 +263,17 @@ function checkAnswer() {
         answers[currentQuestion] = selected;
     } else if (shuffledQuizData[currentQuestion].type === "match") {
         selected = [];
+        let allSelected = true;
         shuffledQuizData[currentQuestion].matches.forEach((match, subIndex) => {
-            const selectedOption = currentQ.querySelector(`select[name=match${currentQuestion}-${subIndex}]`).value;
+            const selectedOption = currentQ.querySelector(`select[name="match${currentQuestion}-${subIndex}"]`).value;
             if (!selectedOption) {
+                allSelected = false;
                 alert(`Пожалуйста, выберите описание для "${match.item}"!`);
-                throw new Error('Missing selection');
+                return;
             }
             selected.push(selectedOption);
         });
+        if (!allSelected) return;
         answers[currentQuestion] = selected;
     }
 
@@ -351,10 +356,6 @@ startButton.addEventListener('click', () => {
 
 prevButton.addEventListener('click', () => showQuestion(currentQuestion - 1));
 checkButton.addEventListener('click', () => {
-    try {
-        checkAnswer();
-    } catch (e) {
-        // Останавливаем выполнение, если пользователь не выбрал ответ в match
-    }
+    checkAnswer();
 });
 nextButton.addEventListener('click', () => showQuestion(currentQuestion + 1));
