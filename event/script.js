@@ -92,16 +92,6 @@ const quizData = [
     }
 ];
 
-// Функция для случайного перемешивания массива (алгоритм Фишера-Йетса)
-function shuffleArray(array) {
-    const shuffled = [...array];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffled[i], shuffled[j]] = [shuffled[i], shuffled[j]];
-    }
-    return shuffled;
-}
-
 const quizContainer = document.getElementById('quiz');
 const resultContainer = document.getElementById('result');
 const introContainer = document.getElementById('intro');
@@ -114,9 +104,21 @@ let currentQuestion = 0;
 let answers = {};
 let shuffledQuizData = [];
 
+// Функция для случайного перемешивания массива (алгоритм Фишера-Йетса)
+function shuffleArray(array) {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[i], shuffled[j]];
+    }
+    return shuffled;
+}
+
 // Создание викторины
 function buildQuiz() {
+    // Перемешиваем вопросы перед созданием викторины
     shuffledQuizData = shuffleArray(quizData);
+
     const output = [];
     shuffledQuizData.forEach((item, index) => {
         let content = '';
@@ -284,8 +286,8 @@ function checkAnswer() {
 
 // Генерация кода с учетом баллов (одна цифра)
 function generateCode(score) {
-    const baseCode = Math.floor(100000 + Math.random() * 900000);
-    return `${baseCode}${score}`;
+    const baseCode = Math.floor(100000 + Math.random() * 900000); // 6-значный код
+    return `${baseCode}${score}`; // Код + одна цифра баллов
 }
 
 // Показать результаты
@@ -313,7 +315,7 @@ function showResults() {
     resultContainer.style.display = 'block';
 
     resultContainer.innerHTML = `
-        Викторина завершена! Вы набрали ${score} из ${shuffledQuizData.length} баллов!
+        Викторина завершена! Вы набрали ${score} из ${shuffledQuizData.length} баллов! Пожалуйста введите код в форму.
         <br><br>
         Ваш уникальный код: <strong id="unique-code">${uniqueCode}</strong>
         <button id="copy-code">Скопировать код</button>
@@ -323,6 +325,7 @@ function showResults() {
         </div>
     `;
 
+    // Добавляем обработчик для кнопки копирования
     document.getElementById('copy-code').addEventListener('click', () => {
         const code = document.getElementById('unique-code').textContent;
         navigator.clipboard.writeText(code).then(() => {
