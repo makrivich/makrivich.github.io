@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Подготовка к диктанку по химии</title>
+    <title>Интерфейс с кликами</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -72,6 +72,9 @@
         .purple { background-color: #9932cc; }
         .light-blue { background-color: #00b7eb; }
         .light-green { background-color: #90ee90; }
+        .pink { background-color: #ff69b4; }
+        .cyan { background-color: #00ced1; }
+        .yellow { background-color: #ffd700; }
 
         /* Стили для диалогового окна */
         .modal {
@@ -134,6 +137,7 @@
 
     <script>
         const hydrocarbons = [
+            // Углеводороды
             { formula: "CH4", name: "метан" },
             { formula: "C2H6", name: "этан" },
             { formula: "C3H8", name: "пропан" },
@@ -143,7 +147,18 @@
             { formula: "C7H16", name: "гептан" },
             { formula: "C8H18", name: "октан" },
             { formula: "C9H20", name: "нонан" },
-            { formula: "C10H22", name: "декан" }
+            { formula: "C10H22", name: "декан" },
+            // Радикалы
+            { formula: "CH3", name: "метил" },
+            { formula: "C2H5", name: "этил" },
+            { formula: "C3H7", name: "пропил" },
+            { formula: "C4H9", name: "бутил" },
+            { formula: "C5H11", name: "пентил" },
+            { formula: "C6H13", name: "гексил" },
+            { formula: "C7H15", name: "гептил" },
+            { formula: "C8H17", name: "октил" },
+            { formula: "C9H19", name: "нонил" },
+            { formula: "C10H21", name: "децил" }
         ];
 
         function shuffle(array) {
@@ -154,7 +169,12 @@
             return array;
         }
 
-        const colors = ['blue', 'red', 'orange', 'green', 'purple', 'light-blue', 'light-green', 'blue', 'orange', 'purple'];
+        const colors = [
+            'blue', 'red', 'orange', 'green', 'purple',
+            'light-blue', 'light-green', 'pink', 'cyan', 'yellow',
+            'blue', 'red', 'orange', 'green', 'purple',
+            'light-blue', 'light-green', 'pink', 'cyan', 'yellow'
+        ];
 
         let selectedButton = null;
 
@@ -187,7 +207,7 @@
                 wrapper.appendChild(label);
                 wrapper.appendChild(input);
 
-                if (index < 5) {
+                if (index < 10) {
                     buttonRow1.appendChild(button);
                     textRow1.appendChild(wrapper);
                 } else {
@@ -197,7 +217,7 @@
             });
 
             addEventListeners();
-            showModal(); // Показываем инструкцию при загрузке
+            showModal();
         }
 
         function addEventListeners() {
@@ -256,7 +276,6 @@
             alert('Ваши ответы:\n' + answers.join('\n'));
         }
 
-        // Управление диалоговым окном
         function showModal() {
             document.getElementById('instructionModal').style.display = 'flex';
         }
