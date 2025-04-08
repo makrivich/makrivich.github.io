@@ -5,22 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Расписание</title>
     <style>
-        table {
-            border-collapse: collapse;
-            width: 100%;
-            max-width: 800px;
-            margin: 20px auto;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
-        th {
-            background-color: #f2f2f2;
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
         }
         h1, h2, h3 {
             text-align: center;
+            color: #333;
+        }
+        .schedule-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .lesson-card {
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 10px;
+            color: #333;
+            font-size: 16px;
+            line-height: 1.5;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
         .no-lesson {
             color: #888;
@@ -33,14 +39,23 @@
         .info {
             text-align: center;
             color: #555;
+            margin-bottom: 20px;
         }
+        /* Пастельные цвета для предметов */
+        .red-pastel { background-color: #ffcccb; } /* Русский, Английский */
+        .blue-pastel { background-color: #add8e6; } /* Алгебра, Геометрия, ВИС, Информатика, Физика, Электив по ОГЭ */
+        .yellow-pastel { background-color: #fffacd; } /* Литература, Проектная деятельность */
+        .orange-pastel { background-color: #ffdab9; } /* История, Обществознание, Разговоры о важном, Классный час, Профориентация */
+        .green-pastel { background-color: #90ee90; } /* Химия, Биология, География */
+        .purple-pastel { background-color: #e6e6fa; } /* Физкультура, ОБЗР */
+        .default-pastel { background-color: #e0e0e0; } /* Для предметов, не входящих в категории */
     </style>
 </head>
 <body>
     <h1>Расписание</h1>
-    <div id="main-schedule"></div>
+    <div id="main-schedule" class="schedule-container"></div>
     <h3>Расписание элективов</h3>
-    <div id="electives-schedule"></div>
+    <div id="electives-schedule" class="schedule-container"></div>
 
     <script>
         // URL для основного расписания и расписания элективов
@@ -72,6 +87,50 @@
             '8 урок': '14:45–15:20'
         };
 
+        // Определение цвета карточки в зависимости от предмета
+        function getSubjectColor(subject) {
+            if (!subject || subject === 'Нет урока') return 'default-pastel';
+
+            const subjectLower = subject.toLowerCase();
+            if (subjectLower.includes('русский') || subjectLower.includes('английский')) {
+                return 'red-pastel';
+            } else if (
+                subjectLower.includes('алгебра') ||
+                subjectLower.includes('геометрия') ||
+                subjectLower.includes('вис') ||
+                subjectLower.includes('информатика') ||
+                subjectLower.includes('физика') ||
+                subjectLower.includes('огэ по математике')
+            ) {
+                return 'blue-pastel';
+            } else if (
+                subjectLower.includes('литература') ||
+                subjectLower.includes('проектная деятельность')
+            ) {
+                return 'yellow-pastel';
+            } else if (
+                subjectLower.includes('история') ||
+                subjectLower.includes('обществознание') ||
+                subjectLower.includes('разговоры о важном') ||
+                subjectLower.includes('классный час') ||
+                subjectLower.includes('профориентация')
+            ) {
+                return 'orange-pastel';
+            } else if (
+                subjectLower.includes('химия') ||
+                subjectLower.includes('биология') ||
+                subjectLower.includes('география')
+            ) {
+                return 'green-pastel';
+            } else if (
+                subjectLower.includes('физкультура') ||
+                subjectLower.includes('обзр')
+            ) {
+                return 'purple-pastel';
+            }
+            return 'default-pastel'; // Для неизвестных предметов
+        }
+
         async function fetchSchedule(url) {
             try {
                 const response = await fetch(url);
@@ -79,9 +138,9 @@
                     throw new Error('Не удалось загрузить данные: ' + response.status);
                 }
                 const text = await response.text();
-                console.log('Полученные данные (сырой CSV):', text); // Для отладки
+                console.log('Полученные данные (сырой CSV):', text);
                 const data = parseCSV(text);
-                console.log('Распарсенные данные:', data); // Для отладки
+                console.log('Распарсенные данные:', data);
                 return data;
             } catch (error) {
                 console.error('Ошибка загрузки данных:', error);
@@ -163,45 +222,39 @@
                 return;
             }
 
-            // Выбираем расписание звонков в зависимости от дня
             const scheduleTimes = displayDayIndex === 6 ? SCHEDULE_SATURDAY : SCHEDULE_WEEKDAYS;
 
             let html = `<h2>${currentDay}</h2>`;
             if (isSunday) {
                 html += `<p class="info">Сегодня воскресенье, показываем расписание на понедельник.</p>`;
             }
-            html += `<table>`;
-            html += `
-                <tr>
-                    <th>Урок</th>
-                    <th>Время</th>
-                    <th>Предмет</th>
-                </tr>
-            `;
 
             for (let i = 1; i < data.length; i++) {
                 const lessonWithTime = data[i][0] || '';
-                const subject = data[i][dayIndex] || '';
+                const subject = data[i][dayIndex] || 'Нет урока';
 
-                // Извлекаем номер урока (без времени)
                 const match = lessonWithTime.match(/(.*)\s*\((.*)\)/);
                 const lesson = match ? match[1].trim() : lessonWithTime;
-
-                // Получаем время из расписания звонков
                 const time = scheduleTimes[lesson] || '-';
 
                 if (lesson) {
+                    // Разделяем название предмета и номер кабинета
+                    const subjectParts = subject.split(' ');
+                    const roomNumber = subject === 'Нет урока' ? '' : subjectParts.pop(); // Извлекаем последнее слово как номер кабинета
+                    const subjectName = subject === 'Нет урока' ? 'Нет урока' : subjectParts.join(' '); // Оставляем всё, кроме последнего слова, как название предмета
+
+                    const colorClass = getSubjectColor(subjectName);
                     html += `
-                        <tr>
-                            <td>${lesson}</td>
-                            <td>${time}</td>
-                            <td>${subject || '<span class="no-lesson">Нет урока</span>'}</td>
-                        </tr>
+                        <div class="lesson-card ${colorClass}">
+                            ${lesson}<br>
+                            ${subjectName}<br>
+                            ${time}<br>
+                            ${subject === 'Нет урока' ? '' : roomNumber + ' кабинет'}
+                        </div>
                     `;
                 }
             }
-            
-            html += '</table>';
+
             document.getElementById(containerId).innerHTML = html;
         }
 
