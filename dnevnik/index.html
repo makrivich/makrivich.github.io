@@ -49,6 +49,29 @@
         .green-pastel { background-color: #90ee90; } /* Химия, Биология, География */
         .purple-pastel { background-color: #e6e6fa; } /* Физкультура, ОБЗР */
         .default-pastel { background-color: #e0e0e0; } /* Для предметов, не входящих в категории */
+        /* Стили для кнопки и счетчика */
+        .countdown-container {
+            max-width: 800px;
+            margin: 20px auto;
+            text-align: center;
+        }
+        .countdown-button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .countdown-button:hover {
+            background-color: #45a049;
+        }
+        .countdown-result {
+            margin-top: 10px;
+            font-size: 18px;
+            color: #333;
+        }
     </style>
 </head>
 <body>
@@ -56,6 +79,10 @@
     <div id="main-schedule" class="schedule-container"></div>
     <h3>Расписание элективов</h3>
     <div id="electives-schedule" class="schedule-container"></div>
+    <div class="countdown-container">
+        <button class="countdown-button" onclick="showCountdown()">Узнать, сколько дней до последнего звонка</button>
+        <div id="countdown-result" class="countdown-result"></div>
+    </div>
 
     <script>
         // URL для основного расписания и расписания элективов
@@ -100,7 +127,7 @@
                 subjectLower.includes('вис') ||
                 subjectLower.includes('информатика') ||
                 subjectLower.includes('физика') ||
-                subjectLower.includes('электив по математике')
+                subjectLower.includes('огэ по математике')
             ) {
                 return 'blue-pastel';
             } else if (
@@ -190,18 +217,21 @@
             if (dayIndex === 0) {
                 return {
                     displayDayIndex: 1, // Понедельник
-                    isSunday: true
+                    isSunday: true,
+                    date: utcPlus5Time
                 };
             }
 
             const isAfter16 = (hours > 16) || (hours === 16 && minutes >= 0);
             if (isAfter16) {
                 dayIndex = (dayIndex + 1) % 7;
+                utcPlus5Time.setDate(utcPlus5Time.getDate() + 1);
             }
 
             return {
                 displayDayIndex: dayIndex,
-                isSunday: false
+                isSunday: false,
+                date: utcPlus5Time
             };
         }
 
@@ -238,10 +268,9 @@
                 const time = scheduleTimes[lesson] || '-';
 
                 if (lesson) {
-                    // Разделяем название предмета и номер кабинета
                     const subjectParts = subject.split(' ');
-                    const roomNumber = subject === 'Нет урока' ? '' : subjectParts.pop(); // Извлекаем последнее слово как номер кабинета
-                    const subjectName = subject === 'Нет урока' ? 'Нет урока' : subjectParts.join(' '); // Оставляем всё, кроме последнего слова, как название предмета
+                    const roomNumber = subject === 'Нет урока' ? '' : subjectParts.pop();
+                    const subjectName = subject === 'Нет урока' ? 'Нет урока' : subjectParts.join(' ');
 
                     const colorClass = getSubjectColor(subjectName);
                     html += `
@@ -256,6 +285,34 @@
             }
 
             document.getElementById(containerId).innerHTML = html;
+        }
+
+        // Функция для отображения счетчика
+        function showCountdown() {
+            const { date } = getDayWithTimeShift();
+            const currentDate = new Date(date); // Уже в UTC+5
+
+            // Устанавливаем дату последнего звонка (20 мая 2025 года) в UTC+5
+            const lastBellDate = new Date('2025-05-20T00:00:00');
+            const utcTimeLastBell = lastBellDate.getTime() + (lastBellDate.getTimezoneOffset() * 60000);
+            const lastBellDateUTC5 = new Date(utcTimeLastBell + (5 * 60 * 60 * 1000));
+
+            // Устанавливаем время на 00:00 для обеих дат, чтобы сравнивать только дни
+            currentDate.setHours(0, 0, 0, 0);
+            lastBellDateUTC5.setHours(0, 0, 0, 0);
+
+            // Рассчитываем разницу в днях
+            const timeDifference = lastBellDateUTC5 - currentDate;
+            const daysDifference = Math.ceil(timeDifference / (1000 * 60 * 60 * 24));
+
+            const countdownElement = document.getElementById('countdown-result');
+            if (daysDifference > 0) {
+                countdownElement.innerHTML = `До последнего звонка осталось ${daysDifference} дней!`;
+            } else if (daysDifference === 0) {
+                countdownElement.innerHTML = `Сегодня последний звонок!`;
+            } else {
+                countdownElement.innerHTML = `Последний звонок уже прошел!`;
+            }
         }
 
         async function loadSchedules() {
