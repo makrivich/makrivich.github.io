@@ -297,12 +297,12 @@
             document.getElementById(containerId).innerHTML = html;
         }
 
-        // Функция для форматирования даты в формате гггг.мм.дд
+        // Функция для форматирования даты в формате гггг-мм-дд
         function formatDateForMenu(date) {
             const year = date.getFullYear();
             const month = String(date.getMonth() + 1).padStart(2, '0');
             const day = String(date.getDate()).padStart(2, '0');
-            return `${year}.${month}.${day}`;
+            return `${year}-${month}-${day}`;
         }
 
         // Функция для открытия меню
