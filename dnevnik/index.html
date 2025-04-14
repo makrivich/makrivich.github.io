@@ -127,7 +127,7 @@
                 subjectLower.includes('вис') ||
                 subjectLower.includes('информатика') ||
                 subjectLower.includes('физика') ||
-                subjectLower.includes('электив по математике')
+                subjectLower.includes('огэ по математике')
             ) {
                 return 'blue-pastel';
             } else if (
@@ -301,13 +301,23 @@
             currentDate.setHours(0, 0, 0, 0);
             lastBellDateUTC5.setHours(0, 0, 0, 0);
 
-            // Рассчитываем разницу в днях
+            // Рассчитываем общее количество дней
             const timeDifference = lastBellDateUTC5 - currentDate;
             const daysDifference = Math.ceil(timeDifference / (1000 * 60 * 60 * 24));
 
+            // Рассчитываем количество учебных дней (исключая воскресенья)
+            let schoolDays = 0;
+            const tempDate = new Date(currentDate);
+            for (let i = 0; i < daysDifference; i++) {
+                if (tempDate.getDay() !== 0) { // Если не воскресенье (0 — воскресенье)
+                    schoolDays++;
+                }
+                tempDate.setDate(tempDate.getDate() + 1);
+            }
+
             const countdownElement = document.getElementById('countdown-result');
             if (daysDifference > 0) {
-                countdownElement.innerHTML = `До последнего звонка осталось ${daysDifference} дней!`;
+                countdownElement.innerHTML = `До последнего звонка осталось ${daysDifference} дней, из них ${schoolDays} учебных дней!`;
             } else if (daysDifference === 0) {
                 countdownElement.innerHTML = `Сегодня последний звонок!`;
             } else {
@@ -333,7 +343,7 @@
         }
 
         loadSchedules();
-        setInterval(loadSchedules, 3600000);
+        setInterval(loadSchedules, 300000);
     </script>
 </body>
 </html>
