@@ -49,20 +49,29 @@
         .green-pastel { background-color: #90ee90; } /* Химия, Биология, География */
         .purple-pastel { background-color: #e6e6fa; } /* Физкультура, ОБЗР */
         .default-pastel { background-color: #e0e0e0; } /* Для предметов, не входящих в категории */
-        /* Стили для кнопки и счетчика */
+        /* Стили для кнопок и счетчика */
         .countdown-container {
             max-width: 800px;
             margin: 20px auto;
             text-align: center;
         }
-        .countdown-button {
+        .countdown-button, .menu-button {
             padding: 10px 20px;
             font-size: 16px;
-            background-color: #4CAF50;
             color: white;
             border: none;
             border-radius: 5px;
             cursor: pointer;
+            margin: 5px;
+        }
+        .menu-button {
+            background-color: #2196F3;
+        }
+        .menu-button:hover {
+            background-color: #1e88e5;
+        }
+        .countdown-button {
+            background-color: #4CAF50;
         }
         .countdown-button:hover {
             background-color: #45a049;
@@ -80,6 +89,7 @@
     <h3>Расписание элективов</h3>
     <div id="electives-schedule" class="schedule-container"></div>
     <div class="countdown-container">
+        <button class="menu-button" onclick="openMenu()">Открыть меню столовой</button>
         <button class="countdown-button" onclick="showCountdown()">Узнать, сколько дней до последнего звонка</button>
         <div id="countdown-result" class="countdown-result"></div>
     </div>
@@ -287,6 +297,22 @@
             document.getElementById(containerId).innerHTML = html;
         }
 
+        // Функция для форматирования даты в формате гггг.мм.дд
+        function formatDateForMenu(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}.${month}.${day}`;
+        }
+
+        // Функция для открытия меню
+        function openMenu() {
+            const { date } = getDayWithTimeShift();
+            const formattedDate = formatDateForMenu(date);
+            const menuUrl = `https://aksioma.obrku.ru/food/${formattedDate}-sm.xlsx`;
+            window.open(menuUrl, '_blank');
+        }
+
         // Функция для отображения счетчика
         function showCountdown() {
             const { date } = getDayWithTimeShift();
@@ -301,23 +327,47 @@
             currentDate.setHours(0, 0, 0, 0);
             lastBellDateUTC5.setHours(0, 0, 0, 0);
 
-            // Рассчитываем общее количество дней
-            const timeDifference = lastBellDateUTC5 - currentDate;
-            const daysDifference = Math.ceil(timeDifference / (1000 * 60 * 60 * 24));
+            // Праздничные дни (1, 2, 3, 8, 9, 10 мая 2025 года)
+            const holidays = [
+                new Date('2025-05-01T00:00:00'),
+                new Date('2025-05-02T00:00:00'),
+                new Date('2025-05-03T00:00:00'),
+                new Date('2025-05-08T00:00:00'),
+                new Date('2025-05-09T00:00:00'),
+                new Date('2025-05-10T00:00:00')
+            ].map(date => {
+                const utcTime = date.getTime() + (date.getTimezoneOffset() * 60000);
+                const dateUTC5 = new Date(utcTime + (5 * 60 * 60 * 1000));
+                dateUTC5.setHours(0, 0, 0, 0);
+                return dateUTC5.getTime();
+            });
 
-            // Рассчитываем количество учебных дней (исключая воскресенья)
+            // Рассчитываем общее количество дней с учетом праздничных дней
+            let totalDays = 0;
             let schoolDays = 0;
             const tempDate = new Date(currentDate);
-            for (let i = 0; i < daysDifference; i++) {
-                if (tempDate.getDay() !== 0) { // Если не воскресенье (0 — воскресенье)
-                    schoolDays++;
+            while (tempDate <= lastBellDateUTC5) {
+                const tempDateTime = tempDate.getTime();
+                const isHoliday = holidays.includes(tempDateTime);
+                const isSunday = tempDate.getDay() === 0;
+
+                if (!isHoliday) {
+                    totalDays++;
+                    if (!isSunday) {
+                        schoolDays++;
+                    }
                 }
+
                 tempDate.setDate(tempDate.getDate() + 1);
             }
 
+            // Проверяем, не прошли ли мы дату последнего звонка
+            const timeDifference = lastBellDateUTC5 - currentDate;
+            const daysDifference = Math.ceil(timeDifference / (1000 * 60 * 60 * 24));
+
             const countdownElement = document.getElementById('countdown-result');
             if (daysDifference > 0) {
-                countdownElement.innerHTML = `До последнего звонка осталось ${daysDifference} дней, из них ${schoolDays} учебных дней!`;
+                countdownElement.innerHTML = `До последнего звонка осталось ${totalDays} дней, из них ${schoolDays} учебных дней!`;
             } else if (daysDifference === 0) {
                 countdownElement.innerHTML = `Сегодня последний звонок!`;
             } else {
