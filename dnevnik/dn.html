@@ -9,7 +9,7 @@
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 20px;
-            padding-top: 60px; /* Отступ сверху, чтобы контент не перекрывался фиксированным хедером */
+            padding-top: 80px; /* Увеличен отступ сверху для хедера с тремя элементами */
             background-color: #f5f5f5;
             transition: background-color 0.3s, color 0.3s;
         }
@@ -63,33 +63,39 @@
             font-style: italic;
             margin: 20px 0;
         }
-        /* Фиксированный хедер с временем и кнопкой */
+        /* Фиксированный хедер с временем, кнопкой и текущим уроком */
         .header {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
-            background-color: #f5f5f5; /* Цвет фона совпадает с телом страницы */
+            background-color: #f5f5f5;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
             padding: 10px;
             display: flex;
+            flex-wrap: wrap; /* Позволяет переносить элементы на маленьких экранах */
             justify-content: center;
             align-items: center;
             gap: 15px;
             z-index: 1000;
             transition: background-color 0.3s;
         }
-        .header .info {
+        .header .info, .header .current-lesson-info {
             margin: 0;
+            font-size: 14px; /* Чуть меньше шрифт для компактности */
+        }
+        .current-lesson-info {
+            color: #4CAF50; /* Зеленый цвет для текущего урока */
+            font-weight: bold;
         }
         /* Пастельные цвета для предметов */
-        .red-pastel { background-color: #ffcccb; } /* Русский, Английский */
-        .blue-pastel { background-color: #add8e6; } /* Алгебра, Геометрия, ВИС, Информатика, Физика, Электив по ОГЭ */
-        .yellow-pastel { background-color: #fffacd; } /* Литература, Проектная деятельность */
-        .orange-pastel { background-color: #ffdab9; } /* История, Обществознание, Разговоры о важном, Классный час, Профориентация */
-        .green-pastel { background-color: #90ee90; } /* Химия, Биология, География */
-        .purple-pastel { background-color: #e6e6fa; } /* Физкультура, ОБЗР */
-        .default-pastel { background-color: #e0e0e0; } /* Для предметов, не входящих в категории */
+        .red-pastel { background-color: #ffcccb; }
+        .blue-pastel { background-color: #add8e6; }
+        .yellow-pastel { background-color: #fffacd; }
+        .orange-pastel { background-color: #ffdab9; }
+        .green-pastel { background-color: #90ee90; }
+        .purple-pastel { background-color: #e6e6fa; }
+        .default-pastel { background-color: #e0e0e0; }
         /* Стили для кнопок и счетчика */
         .countdown-container {
             max-width: 800px;
@@ -143,6 +149,9 @@
         .dark-theme .info, .dark-theme .countdown-result {
             color: #cccccc;
         }
+        .dark-theme .current-lesson-info {
+            color: #4CAF50;
+        }
         .dark-theme .error {
             color: #ff6666;
         }
@@ -166,6 +175,9 @@
         .light-theme .info, .light-theme .countdown-result {
             color: #555;
         }
+        .light-theme .current-lesson-info {
+            color: #4CAF50;
+        }
         .light-theme .error {
             color: red;
         }
@@ -187,6 +199,9 @@
             body:not(.light-theme):not(.dark-theme) .info, body:not(.light-theme):not(.dark-theme) .countdown-result {
                 color: #cccccc;
             }
+            body:not(.light-theme):not(.dark-theme) .current-lesson-info {
+                color: #4CAF50;
+            }
             body:not(.light-theme):not(.dark-theme) .error {
                 color: #ff6666;
             }
@@ -202,6 +217,7 @@
 <body>
     <div class="header">
         <div id="current-time" class="info"></div>
+        <div id="current-lesson" class="current-lesson-info">Нет текущего урока</div>
         <button class="theme-button" onclick="toggleTheme()" id="theme-button">⚙️</button>
     </div>
     <h1>Расписание</h1>
@@ -392,6 +408,9 @@
                 html += `<p class="info">Сегодня воскресенье, показываем расписание на понедельник.</p>`;
             }
 
+            let currentLessonInfo = 'Нет текущего урока';
+            let foundCurrentLesson = false;
+
             for (let i = 1; i < data.length; i++) {
                 const lessonWithTime = data[i][0] || '';
                 const subject = data[i][dayIndex] || 'Нет урока';
@@ -408,6 +427,7 @@
                     });
                     if (currentTime >= start && currentTime <= end) {
                         isCurrentLesson = true;
+                        foundCurrentLesson = true;
                     }
                 }
 
@@ -425,10 +445,21 @@
                             ${subject === 'Нет урока' ? '' : roomNumber + ' кабинет'}
                         </div>
                     `;
+
+                    // Обновляем текущий урок в хедере
+                    if (isCurrentLesson && containerId === 'main-schedule') { // Учитываем только основное расписание
+                        currentLessonInfo = `${subjectName} (${time})`;
+                    }
                 }
             }
 
             document.getElementById(containerId).innerHTML = html;
+
+            // Обновляем текущий урок в хедере только если это основное расписание
+            if (containerId === 'main-schedule') {
+                const currentLessonElement = document.getElementById('current-lesson');
+                currentLessonElement.innerHTML = currentLessonInfo;
+            }
         }
 
         // Функция для форматирования даты в формате гггг-мм-дд
@@ -547,7 +578,7 @@
             });
 
             const eventElement = document.getElementById('upcoming-event');
-            if (nearestEvent && daysToEvent <= 7) { // Показываем, если событие в течение недели
+            if (nearestEvent && daysToEvent <= 7) {
                 eventElement.innerHTML = `Ближайшее событие: ${nearestEvent.name} через ${daysToEvent} дней!`;
             } else {
                 eventElement.innerHTML = '';
@@ -571,20 +602,17 @@
             const currentTheme = localStorage.getItem('theme') || 'system';
 
             if (currentTheme === 'dark') {
-                // Переключаем на системную тему
                 document.body.classList.remove('dark-theme');
                 document.body.classList.remove('light-theme');
                 localStorage.setItem('theme', 'system');
                 applySystemTheme();
                 themeButton.innerHTML = '⚙️';
             } else if (currentTheme === 'system') {
-                // Переключаем на светлую тему
                 document.body.classList.remove('dark-theme');
                 document.body.classList.add('light-theme');
                 localStorage.setItem('theme', 'light');
                 themeButton.innerHTML = '☀️';
             } else {
-                // Переключаем на темную тему
                 document.body.classList.remove('light-theme');
                 document.body.classList.add('dark-theme');
                 localStorage.setItem('theme', 'dark');
