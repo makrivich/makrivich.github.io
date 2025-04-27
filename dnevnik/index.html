@@ -137,7 +137,7 @@
                 subjectLower.includes('вис') ||
                 subjectLower.includes('информатика') ||
                 subjectLower.includes('физика') ||
-                subjectLower.includes('электив по математике')
+                subjectLower.includes('огэ по математике')
             ) {
                 return 'blue-pastel';
             } else if (
@@ -307,10 +307,18 @@
 
         // Функция для открытия меню
         function openMenu() {
-            const { date } = getDayWithTimeShift();
-            const formattedDate = formatDateForMenu(date);
-            const menuUrl = `https://aksioma.obrku.ru/food/${formattedDate}-sm.xlsx`;
-            window.open(menuUrl, '_blank');
+            const { date, isSunday } = getDayWithTimeShift();
+            const menuDate = new Date(date);
+
+            // Если сегодня воскресенье, используем дату понедельника
+            if (isSunday) {
+                menuDate.setDate(menuDate.getDate() + 1);
+            }
+
+            const formattedDate = formatDateForMenu(menuDate);
+            const encodedMenuUrl = encodeURIComponent(`https://aksioma.obrku.ru/food/${formattedDate}-sm.xlsx`);
+            const finalUrl = `https://view.officeapps.live.com/op/view.aspx?src=${encodedMenuUrl}&wdOrigin=BROWSELINK`;
+            window.open(finalUrl, '_blank');
         }
 
         // Функция для отображения счетчика
@@ -392,7 +400,7 @@
         }
 
         loadSchedules();
-        setInterval(loadSchedules, 3600000);
+        setInterval(loadSchedules, 300000);
     </script>
 </body>
 </html>
