@@ -9,6 +9,7 @@
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 20px;
+            padding-top: 60px; /* Отступ сверху, чтобы контент не перекрывался фиксированным хедером */
             background-color: #f5f5f5;
             transition: background-color 0.3s, color 0.3s;
         }
@@ -56,6 +57,31 @@
             margin-bottom: 20px;
             transition: color 0.3s;
         }
+        .loading {
+            text-align: center;
+            color: #555;
+            font-style: italic;
+            margin: 20px 0;
+        }
+        /* Фиксированный хедер с временем и кнопкой */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background-color: #f5f5f5; /* Цвет фона совпадает с телом страницы */
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            padding: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            z-index: 1000;
+            transition: background-color 0.3s;
+        }
+        .header .info {
+            margin: 0;
+        }
         /* Пастельные цвета для предметов */
         .red-pastel { background-color: #ffcccb; } /* Русский, Английский */
         .blue-pastel { background-color: #add8e6; } /* Алгебра, Геометрия, ВИС, Информатика, Физика, Электив по ОГЭ */
@@ -99,9 +125,6 @@
         }
         .theme-button {
             background-color: #666;
-            position: fixed;
-            top: 10px;
-            right: 10px;
         }
         .theme-button:hover {
             background-color: #555;
@@ -110,6 +133,9 @@
         .dark-theme {
             background-color: #1a1a1a;
             color: #e0e0e0;
+        }
+        .dark-theme .header {
+            background-color: #1a1a1a;
         }
         .dark-theme h1, .dark-theme h2, .dark-theme h3 {
             color: #e0e0e0;
@@ -120,6 +146,9 @@
         .dark-theme .error {
             color: #ff6666;
         }
+        .dark-theme .loading {
+            color: #cccccc;
+        }
         .dark-theme .lesson-card {
             box-shadow: 0 2px 5px rgba(255, 255, 255, 0.1);
         }
@@ -127,6 +156,9 @@
         .light-theme {
             background-color: #f5f5f5;
             color: #333;
+        }
+        .light-theme .header {
+            background-color: #f5f5f5;
         }
         .light-theme h1, .light-theme h2, .light-theme h3 {
             color: #333;
@@ -146,6 +178,9 @@
                 background-color: #1a1a1a;
                 color: #e0e0e0;
             }
+            body:not(.light-theme):not(.dark-theme) .header {
+                background-color: #1a1a1a;
+            }
             body:not(.light-theme):not(.dark-theme) h1, body:not(.light-theme):not(.dark-theme) h2, body:not(.light-theme):not(.dark-theme) h3 {
                 color: #e0e0e0;
             }
@@ -155,6 +190,9 @@
             body:not(.light-theme):not(.dark-theme) .error {
                 color: #ff6666;
             }
+            body:not(.light-theme):not(.dark-theme) .loading {
+                color: #cccccc;
+            }
             body:not(.light-theme):not(.dark-theme) .lesson-card {
                 box-shadow: 0 2px 5px rgba(255, 255, 255, 0.1);
             }
@@ -162,12 +200,14 @@
     </style>
 </head>
 <body>
-    <div id="current-time" class="info"></div>
-    <button class="theme-button" onclick="toggleTheme()" id="theme-button">⚙️</button>
+    <div class="header">
+        <div id="current-time" class="info"></div>
+        <button class="theme-button" onclick="toggleTheme()" id="theme-button">⚙️</button>
+    </div>
     <h1>Расписание</h1>
-    <div id="main-schedule" class="schedule-container"></div>
+    <div id="main-schedule" class="schedule-container"><p class="loading">Подождите, расписание загружается...</p></div>
     <h3>Расписание элективов</h3>
-    <div id="electives-schedule" class="schedule-container"></div>
+    <div id="electives-schedule" class="schedule-container"><p class="loading">Подождите, расписание загружается...</p></div>
     <div class="countdown-container">
         <div id="upcoming-event" class="info"></div>
         <button class="menu-button" onclick="openMenu()">Открыть меню столовой</button>
@@ -218,7 +258,7 @@
                 subjectLower.includes('вис') ||
                 subjectLower.includes('информатика') ||
                 subjectLower.includes('физика') ||
-                subjectLower.includes('огэ по математике')
+                subjectLower.includes('электив по математике')
             ) {
                 return 'blue-pastel';
             } else if (
@@ -242,7 +282,8 @@
                 return 'green-pastel';
             } else if (
                 subjectLower.includes('физкультура') ||
-                subjectLower.includes('обзр')
+                subjectLower.includes('обзр') ||
+                subjectLower.includes('технология')
             ) {
                 return 'purple-pastel';
             }
@@ -561,15 +602,17 @@
         }
 
         async function loadSchedules() {
-            const mainData = await fetchSchedule(MAIN_SHEET_URL);
-            const electivesData = await fetchSchedule(ELECTIVES_SHEET_URL);
+            const mainDataPromise = fetchSchedule(MAIN_SHEET_URL);
+            const electivesDataPromise = fetchSchedule(ELECTIVES_SHEET_URL);
 
+            const mainData = await mainDataPromise;
             if (mainData) {
                 displaySchedule(mainData, 'main-schedule', 'Обычное расписание');
             } else {
                 document.getElementById('main-schedule').innerHTML = `<p class="error">Не удалось загрузить обычное расписание</p>`;
             }
 
+            const electivesData = await electivesDataPromise;
             if (electivesData) {
                 displaySchedule(electivesData, 'electives-schedule', 'Расписание элективов');
             } else {
@@ -610,7 +653,7 @@
         });
 
         loadSchedules();
-        setInterval(loadSchedules, 300000);
+        setInterval(loadSchedules, 3600000);
         setInterval(updateCurrentTime, 60000); // Обновляем время каждую минуту
     </script>
 </body>
