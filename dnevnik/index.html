@@ -9,11 +9,14 @@
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 20px;
+            padding-top: 80px; /* Увеличен отступ сверху для хедера с тремя элементами */
             background-color: #f5f5f5;
+            transition: background-color 0.3s, color 0.3s;
         }
         h1, h2, h3 {
             text-align: center;
             color: #333;
+            transition: color 0.3s;
         }
         .schedule-container {
             max-width: 800px;
@@ -23,10 +26,22 @@
             padding: 15px;
             margin-bottom: 10px;
             border-radius: 10px;
-            color: #333;
+            color: #333; /* Текст всегда черный */
             font-size: 16px;
             line-height: 1.5;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            opacity: 0;
+            animation: fadeIn 0.5s ease forwards;
+            animation-delay: calc(var(--index) * 0.1s);
+            transition: box-shadow 0.3s;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .current-lesson {
+            border: 2px solid #4CAF50;
+            background-color: rgba(76, 175, 80, 0.1);
         }
         .no-lesson {
             color: #888;
@@ -40,22 +55,54 @@
             text-align: center;
             color: #555;
             margin-bottom: 20px;
+            transition: color 0.3s;
+        }
+        .loading {
+            text-align: center;
+            color: #555;
+            font-style: italic;
+            margin: 20px 0;
+        }
+        /* Фиксированный хедер с временем, кнопкой и текущим уроком */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background-color: #f5f5f5;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            padding: 10px;
+            display: flex;
+            flex-wrap: wrap; /* Позволяет переносить элементы на маленьких экранах */
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            z-index: 1000;
+            transition: background-color 0.3s;
+        }
+        .header .info, .header .current-lesson-info {
+            margin: 0;
+            font-size: 14px; /* Чуть меньше шрифт для компактности */
+        }
+        .current-lesson-info {
+            color: #4CAF50; /* Зеленый цвет для текущего урока */
+            font-weight: bold;
         }
         /* Пастельные цвета для предметов */
-        .red-pastel { background-color: #ffcccb; } /* Русский, Английский */
-        .blue-pastel { background-color: #add8e6; } /* Алгебра, Геометрия, ВИС, Информатика, Физика, Электив по ОГЭ */
-        .yellow-pastel { background-color: #fffacd; } /* Литература, Проектная деятельность */
-        .orange-pastel { background-color: #ffdab9; } /* История, Обществознание, Разговоры о важном, Классный час, Профориентация */
-        .green-pastel { background-color: #90ee90; } /* Химия, Биология, География */
-        .purple-pastel { background-color: #e6e6fa; } /* Физкультура, ОБЗР */
-        .default-pastel { background-color: #e0e0e0; } /* Для предметов, не входящих в категории */
+        .red-pastel { background-color: #ffcccb; }
+        .blue-pastel { background-color: #add8e6; }
+        .yellow-pastel { background-color: #fffacd; }
+        .orange-pastel { background-color: #ffdab9; }
+        .green-pastel { background-color: #90ee90; }
+        .purple-pastel { background-color: #e6e6fa; }
+        .default-pastel { background-color: #e0e0e0; }
         /* Стили для кнопок и счетчика */
         .countdown-container {
             max-width: 800px;
             margin: 20px auto;
             text-align: center;
         }
-        .countdown-button, .menu-button {
+        .countdown-button, .menu-button, .theme-button {
             padding: 10px 20px;
             font-size: 16px;
             color: white;
@@ -80,15 +127,105 @@
             margin-top: 10px;
             font-size: 18px;
             color: #333;
+            transition: color 0.3s;
+        }
+        .theme-button {
+            background-color: #666;
+        }
+        .theme-button:hover {
+            background-color: #555;
+        }
+        /* Темная тема */
+        .dark-theme {
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+        }
+        .dark-theme .header {
+            background-color: #1a1a1a;
+        }
+        .dark-theme h1, .dark-theme h2, .dark-theme h3 {
+            color: #e0e0e0;
+        }
+        .dark-theme .info, .dark-theme .countdown-result {
+            color: #cccccc;
+        }
+        .dark-theme .current-lesson-info {
+            color: #4CAF50;
+        }
+        .dark-theme .error {
+            color: #ff6666;
+        }
+        .dark-theme .loading {
+            color: #cccccc;
+        }
+        .dark-theme .lesson-card {
+            box-shadow: 0 2px 5px rgba(255, 255, 255, 0.1);
+        }
+        /* Светлая тема */
+        .light-theme {
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        .light-theme .header {
+            background-color: #f5f5f5;
+        }
+        .light-theme h1, .light-theme h2, .light-theme h3 {
+            color: #333;
+        }
+        .light-theme .info, .light-theme .countdown-result {
+            color: #555;
+        }
+        .light-theme .current-lesson-info {
+            color: #4CAF50;
+        }
+        .light-theme .error {
+            color: red;
+        }
+        .light-theme .lesson-card {
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        /* Поддержка системной темы */
+        @media (prefers-color-scheme: dark) {
+            body:not(.light-theme):not(.dark-theme) {
+                background-color: #1a1a1a;
+                color: #e0e0e0;
+            }
+            body:not(.light-theme):not(.dark-theme) .header {
+                background-color: #1a1a1a;
+            }
+            body:not(.light-theme):not(.dark-theme) h1, body:not(.light-theme):not(.dark-theme) h2, body:not(.light-theme):not(.dark-theme) h3 {
+                color: #e0e0e0;
+            }
+            body:not(.light-theme):not(.dark-theme) .info, body:not(.light-theme):not(.dark-theme) .countdown-result {
+                color: #cccccc;
+            }
+            body:not(.light-theme):not(.dark-theme) .current-lesson-info {
+                color: #4CAF50;
+            }
+            body:not(.light-theme):not(.dark-theme) .error {
+                color: #ff6666;
+            }
+            body:not(.light-theme):not(.dark-theme) .loading {
+                color: #cccccc;
+            }
+            body:not(.light-theme):not(.dark-theme) .lesson-card {
+                box-shadow: 0 2px 5px rgba(255, 255, 255, 0.1);
+            }
         }
     </style>
 </head>
 <body>
+    <div class="header">
+        <div id="current-time" class="info"></div>
+        <div id="current-lesson" class="current-lesson-info">Нет текущего урока</div>
+        <button class="theme-button" onclick="toggleTheme()" id="theme-button">⚙️</button>
+    </div>
     <h1>Расписание</h1>
-    <div id="main-schedule" class="schedule-container"></div>
+    <div id="main-schedule" class="schedule-container"><p class="loading">Подождите, расписание загружается...</p></div>
     <h3>Расписание элективов</h3>
-    <div id="electives-schedule" class="schedule-container"></div>
+    <div id="electives-schedule" class="schedule-container"><p class="loading">Подождите, расписание загружается...</p></div>
     <div class="countdown-container">
+        <div id="upcoming-event" class="info"></div>
         <button class="menu-button" onclick="openMenu()">Открыть меню столовой</button>
         <button class="countdown-button" onclick="showCountdown()">Узнать, сколько дней до последнего звонка</button>
         <div id="countdown-result" class="countdown-result"></div>
@@ -137,7 +274,7 @@
                 subjectLower.includes('вис') ||
                 subjectLower.includes('информатика') ||
                 subjectLower.includes('физика') ||
-                subjectLower.includes('огэ по математике')
+                subjectLower.includes('электив по математике')
             ) {
                 return 'blue-pastel';
             } else if (
@@ -161,7 +298,8 @@
                 return 'green-pastel';
             } else if (
                 subjectLower.includes('физкультура') ||
-                subjectLower.includes('обзр')
+                subjectLower.includes('обзр') ||
+                subjectLower.includes('технология')
             ) {
                 return 'purple-pastel';
             }
@@ -246,7 +384,7 @@
         }
 
         function displaySchedule(data, containerId, title) {
-            const { displayDayIndex, isSunday } = getDayWithTimeShift();
+            const { displayDayIndex, isSunday, date } = getDayWithTimeShift();
             const days = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
             const currentDay = days[displayDayIndex];
             
@@ -263,11 +401,15 @@
             }
 
             const scheduleTimes = displayDayIndex === 6 ? SCHEDULE_SATURDAY : SCHEDULE_WEEKDAYS;
+            const currentTime = date.getHours() * 60 + date.getMinutes();
 
             let html = `<h2>${currentDay}</h2>`;
             if (isSunday) {
                 html += `<p class="info">Сегодня воскресенье, показываем расписание на понедельник.</p>`;
             }
+
+            let currentLessonInfo = 'Нет текущего урока';
+            let foundCurrentLesson = false;
 
             for (let i = 1; i < data.length; i++) {
                 const lessonWithTime = data[i][0] || '';
@@ -277,6 +419,18 @@
                 const lesson = match ? match[1].trim() : lessonWithTime;
                 const time = scheduleTimes[lesson] || '-';
 
+                let isCurrentLesson = false;
+                if (!isSunday && time !== '-') {
+                    const [start, end] = time.split('–').map(t => {
+                        const [h, m] = t.split(':').map(Number);
+                        return h * 60 + m;
+                    });
+                    if (currentTime >= start && currentTime <= end) {
+                        isCurrentLesson = true;
+                        foundCurrentLesson = true;
+                    }
+                }
+
                 if (lesson) {
                     const subjectParts = subject.split(' ');
                     const roomNumber = subject === 'Нет урока' ? '' : subjectParts.pop();
@@ -284,17 +438,28 @@
 
                     const colorClass = getSubjectColor(subjectName);
                     html += `
-                        <div class="lesson-card ${colorClass}">
+                        <div class="lesson-card ${colorClass} ${isCurrentLesson ? 'current-lesson' : ''}" style="--index: ${i - 1}">
                             ${lesson}<br>
                             ${subjectName}<br>
                             ${time}<br>
                             ${subject === 'Нет урока' ? '' : roomNumber + ' кабинет'}
                         </div>
                     `;
+
+                    // Обновляем текущий урок в хедере
+                    if (isCurrentLesson && containerId === 'main-schedule') { // Учитываем только основное расписание
+                        currentLessonInfo = `${subjectName} (${time})`;
+                    }
                 }
             }
 
             document.getElementById(containerId).innerHTML = html;
+
+            // Обновляем текущий урок в хедере только если это основное расписание
+            if (containerId === 'main-schedule') {
+                const currentLessonElement = document.getElementById('current-lesson');
+                currentLessonElement.innerHTML = currentLessonInfo;
+            }
         }
 
         // Функция для форматирования даты в формате гггг-мм-дд
@@ -382,25 +547,142 @@
             }
         }
 
-        async function loadSchedules() {
-            const mainData = await fetchSchedule(MAIN_SHEET_URL);
-            const electivesData = await fetchSchedule(ELECTIVES_SHEET_URL);
+        // Уведомления о ближайших событиях
+        const events = [
+            { date: '2025-05-01', name: 'День труда (выходной)' },
+            { date: '2025-05-02', name: 'День труда (выходной)' },
+            { date: '2025-05-03', name: 'День труда (выходной)' },
+            { date: '2025-05-08', name: 'День Победы (выходной)' },
+            { date: '2025-05-09', name: 'День Победы (выходной)' },
+            { date: '2025-05-10', name: 'День Победы (выходной)' },
+            { date: '2025-05-20', name: 'Последний звонок' }
+        ];
 
+        function showUpcomingEvent() {
+            const { date } = getDayWithTimeShift();
+            const currentDate = new Date(date);
+            currentDate.setHours(0, 0, 0, 0);
+
+            let nearestEvent = null;
+            let daysToEvent = Infinity;
+
+            events.forEach(event => {
+                const eventDate = new Date(event.date);
+                eventDate.setHours(0, 0, 0, 0);
+                const timeDiff = eventDate - currentDate;
+                const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+                if (daysDiff >= 0 && daysDiff < daysToEvent) {
+                    daysToEvent = daysDiff;
+                    nearestEvent = event;
+                }
+            });
+
+            const eventElement = document.getElementById('upcoming-event');
+            if (nearestEvent && daysToEvent <= 7) {
+                eventElement.innerHTML = `Ближайшее событие: ${nearestEvent.name} через ${daysToEvent} дней!`;
+            } else {
+                eventElement.innerHTML = '';
+            }
+        }
+
+        // Отображение текущей даты и времени
+        function updateCurrentTime() {
+            const { date } = getDayWithTimeShift();
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            document.getElementById('current-time').innerHTML = `Сегодня: ${day}.${month}.${year}, ${hours}:${minutes} UTC+5`;
+        }
+
+        // Переключение темы
+        function toggleTheme() {
+            const themeButton = document.getElementById('theme-button');
+            const currentTheme = localStorage.getItem('theme') || 'system';
+
+            if (currentTheme === 'dark') {
+                document.body.classList.remove('dark-theme');
+                document.body.classList.remove('light-theme');
+                localStorage.setItem('theme', 'system');
+                applySystemTheme();
+                themeButton.innerHTML = '⚙️';
+            } else if (currentTheme === 'system') {
+                document.body.classList.remove('dark-theme');
+                document.body.classList.add('light-theme');
+                localStorage.setItem('theme', 'light');
+                themeButton.innerHTML = '☀️';
+            } else {
+                document.body.classList.remove('light-theme');
+                document.body.classList.add('dark-theme');
+                localStorage.setItem('theme', 'dark');
+                themeButton.innerHTML = '🌙';
+            }
+        }
+
+        // Применение системной темы
+        function applySystemTheme() {
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                document.body.classList.add('dark-theme');
+            } else {
+                document.body.classList.add('light-theme');
+            }
+        }
+
+        async function loadSchedules() {
+            const mainDataPromise = fetchSchedule(MAIN_SHEET_URL);
+            const electivesDataPromise = fetchSchedule(ELECTIVES_SHEET_URL);
+
+            const mainData = await mainDataPromise;
             if (mainData) {
                 displaySchedule(mainData, 'main-schedule', 'Обычное расписание');
             } else {
                 document.getElementById('main-schedule').innerHTML = `<p class="error">Не удалось загрузить обычное расписание</p>`;
             }
 
+            const electivesData = await electivesDataPromise;
             if (electivesData) {
                 displaySchedule(electivesData, 'electives-schedule', 'Расписание элективов');
             } else {
                 document.getElementById('electives-schedule').innerHTML = `<p class="error">Не удалось загрузить расписание элективов</p>`;
             }
+
+            showUpcomingEvent();
+            updateCurrentTime();
         }
 
+        // Инициализация темы
+        const savedTheme = localStorage.getItem('theme') || 'system';
+        const themeButton = document.getElementById('theme-button');
+        if (savedTheme === 'dark') {
+            document.body.classList.add('dark-theme');
+            themeButton.innerHTML = '🌙';
+        } else if (savedTheme === 'light') {
+            document.body.classList.add('light-theme');
+            themeButton.innerHTML = '☀️';
+        } else {
+            applySystemTheme();
+            themeButton.innerHTML = '⚙️';
+            localStorage.setItem('theme', 'system');
+        }
+
+        // Слушаем изменения системной темы
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'system') {
+                if (e.matches) {
+                    document.body.classList.remove('light-theme');
+                    document.body.classList.add('dark-theme');
+                } else {
+                    document.body.classList.remove('dark-theme');
+                    document.body.classList.add('light-theme');
+                }
+            }
+        });
+
         loadSchedules();
-        setInterval(loadSchedules, 300000);
+        setInterval(loadSchedules, 3600000);
+        setInterval(updateCurrentTime, 60000); // Обновляем время каждую минуту
     </script>
 </body>
 </html>
