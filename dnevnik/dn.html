@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Расписание</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        h1, h2, h3 {
+            text-align: center;
+            color: #333;
+            transition: color 0.3s;
+        }
+        .schedule-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .lesson-card {
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 10px;
+            color: #333; /* Текст всегда черный */
+            font-size: 16px;
+            line-height: 1.5;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            opacity: 0;
+            animation: fadeIn 0.5s ease forwards;
+            animation-delay: calc(var(--index) * 0.1s);
+            transition: box-shadow 0.3s;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .current-lesson {
+            border: 2px solid #4CAF50;
+            background-color: rgba(76, 175, 80, 0.1);
+        }
+        .no-lesson {
+            color: #888;
+            font-style: italic;
+        }
+        .error {
+            color: red;
+            text-align: center;
+        }
+        .info {
+            text-align: center;
+            color: #555;
+            margin-bottom: 20px;
+            transition: color 0.3s;
+        }
+        /* Пастельные цвета для предметов */
+        .red-pastel { background-color: #ffcccb; } /* Русский, Английский */
+        .blue-pastel { background-color: #add8e6; } /* Алгебра, Геометрия, ВИС, Информатика, Физика, Электив по ОГЭ */
+        .yellow-pastel { background-color: #fffacd; } /* Литература, Проектная деятельность */
+        .orange-pastel { background-color: #ffdab9; } /* История, Обществознание, Разговоры о важном, Классный час, Профориентация */
+        .green-pastel { background-color: #90ee90; } /* Химия, Биология, География */
+        .purple-pastel { background-color: #e6e6fa; } /* Физкультура, ОБЗР */
+        .default-pastel { background-color: #e0e0e0; } /* Для предметов, не входящих в категории */
+        /* Стили для кнопок и счетчика */
+        .countdown-container {
+            max-width: 800px;
+            margin: 20px auto;
+            text-align: center;
+        }
+        .countdown-button, .menu-button, .theme-button {
+            padding: 10px 20px;
+            font-size: 16px;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .menu-button {
+            background-color: #2196F3;
+        }
+        .menu-button:hover {
+            background-color: #1e88e5;
+        }
+        .countdown-button {
+            background-color: #4CAF50;
+        }
+        .countdown-button:hover {
+            background-color: #45a049;
+        }
+        .countdown-result {
+            margin-top: 10px;
+            font-size: 18px;
+            color: #333;
+            transition: color 0.3s;
+        }
+        .theme-button {
+            background-color: #666;
+            position: fixed;
+            top: 10px;
+            right: 10px;
+        }
+        .theme-button:hover {
+            background-color: #555;
+        }
+        /* Темная тема */
+        .dark-theme {
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+        }
+        .dark-theme h1, .dark-theme h2, .dark-theme h3 {
+            color: #e0e0e0;
+        }
+        .dark-theme .info, .dark-theme .countdown-result {
+            color: #cccccc;
+        }
+        .dark-theme .error {
+            color: #ff6666;
+        }
+        .dark-theme .lesson-card {
+            box-shadow: 0 2px 5px rgba(255, 255, 255, 0.1);
+        }
+        /* Светлая тема */
+        .light-theme {
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        .light-theme h1, .light-theme h2, .light-theme h3 {
+            color: #333;
+        }
+        .light-theme .info, .light-theme .countdown-result {
+            color: #555;
+        }
+        .light-theme .error {
+            color: red;
+        }
+        .light-theme .lesson-card {
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        /* Поддержка системной темы */
+        @media (prefers-color-scheme: dark) {
+            body:not(.light-theme):not(.dark-theme) {
+                background-color: #1a1a1a;
+                color: #e0e0e0;
+            }
+            body:not(.light-theme):not(.dark-theme) h1, body:not(.light-theme):not(.dark-theme) h2, body:not(.light-theme):not(.dark-theme) h3 {
+                color: #e0e0e0;
+            }
+            body:not(.light-theme):not(.dark-theme) .info, body:not(.light-theme):not(.dark-theme) .countdown-result {
+                color: #cccccc;
+            }
+            body:not(.light-theme):not(.dark-theme) .error {
+                color: #ff6666;
+            }
+            body:not(.light-theme):not(.dark-theme) .lesson-card {
+                box-shadow: 0 2px 5px rgba(255, 255, 255, 0.1);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="current-time" class="info"></div>
+    <button class="theme-button" onclick="toggleTheme()" id="theme-button">⚙️</button>
+    <h1>Расписание</h1>
+    <div id="main-schedule" class="schedule-container"></div>
+    <h3>Расписание элективов</h3>
+    <div id="electives-schedule" class="schedule-container"></div>
+    <div class="countdown-container">
+        <div id="upcoming-event" class="info"></div>
+        <button class="menu-button" onclick="openMenu()">Открыть меню столовой</button>
+        <button class="countdown-button" onclick="showCountdown()">Узнать, сколько дней до последнего звонка</button>
+        <div id="countdown-result" class="countdown-result"></div>
+    </div>
+
+    <script>
+        // URL для основного расписания и расписания элективов
+        const MAIN_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1lWqIJaWWXceiE_CWyIdzMRLcRoQa-ulnT5tJfgLDo0o/export?format=csv&gid=0';
+        const ELECTIVES_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1qS4JSUM2DqFgZhmiMfaJ8VU-t2DvpRtJyadEQkdxujA/export?format=csv';
+
+        // Расписание звонков
+        const SCHEDULE_WEEKDAYS = {
+            '0 урок': '7:45–8:25',
+            '1 урок': '8:30–9:10',
+            '2 урок': '9:20–10:00',
+            '3 урок': '10:15–10:55',
+            '4 урок': '11:15–11:55',
+            '5 урок': '12:15–12:55',
+            '6 урок': '13:05–13:45',
+            '7 урок': '13:55–14:35',
+            '8 урок': '14:45–15:20'
+        };
+
+        const SCHEDULE_SATURDAY = {
+            '0 урок': '7:45–8:25',
+            '1 урок': '8:30–9:10',
+            '2 урок': '9:20–10:00',
+            '3 урок': '10:15–10:55',
+            '4 урок': '11:10–11:50',
+            '5 урок': '12:05–12:45',
+            '6 урок': '12:55–13:35',
+            '7 урок': '13:45–14:25',
+            '8 урок': '14:45–15:20'
+        };
+
+        // Определение цвета карточки в зависимости от предмета
+        function getSubjectColor(subject) {
+            if (!subject || subject === 'Нет урока') return 'default-pastel';
+
+            const subjectLower = subject.toLowerCase();
+            if (subjectLower.includes('русский') || subjectLower.includes('английский')) {
+                return 'red-pastel';
+            } else if (
+                subjectLower.includes('алгебра') ||
+                subjectLower.includes('геометрия') ||
+                subjectLower.includes('вис') ||
+                subjectLower.includes('информатика') ||
+                subjectLower.includes('физика') ||
+                subjectLower.includes('огэ по математике')
+            ) {
+                return 'blue-pastel';
+            } else if (
+                subjectLower.includes('литература') ||
+                subjectLower.includes('проектная деятельность')
+            ) {
+                return 'yellow-pastel';
+            } else if (
+                subjectLower.includes('история') ||
+                subjectLower.includes('обществознание') ||
+                subjectLower.includes('разговоры о важном') ||
+                subjectLower.includes('классный час') ||
+                subjectLower.includes('профориентация')
+            ) {
+                return 'orange-pastel';
+            } else if (
+                subjectLower.includes('химия') ||
+                subjectLower.includes('биология') ||
+                subjectLower.includes('география')
+            ) {
+                return 'green-pastel';
+            } else if (
+                subjectLower.includes('физкультура') ||
+                subjectLower.includes('обзр')
+            ) {
+                return 'purple-pastel';
+            }
+            return 'default-pastel'; // Для неизвестных предметов
+        }
+
+        async function fetchSchedule(url) {
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error('Не удалось загрузить данные: ' + response.status);
+                }
+                const text = await response.text();
+                console.log('Полученные данные (сырой CSV):', text);
+                const data = parseCSV(text);
+                console.log('Распарсенные данные:', data);
+                return data;
+            } catch (error) {
+                console.error('Ошибка загрузки данных:', error);
+                return null;
+            }
+        }
+
+        function parseCSV(text) {
+            const rows = [];
+            let currentRow = [];
+            let currentCell = '';
+            let insideQuotes = false;
+
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+                if (char === '"') {
+                    insideQuotes = !insideQuotes;
+                } else if (char === ',' && !insideQuotes) {
+                    currentRow.push(currentCell.trim());
+                    currentCell = '';
+                } else if (char === '\n' && !insideQuotes) {
+                    currentRow.push(currentCell.trim());
+                    rows.push(currentRow);
+                    currentRow = [];
+                    currentCell = '';
+                } else {
+                    currentCell += char;
+                }
+            }
+            if (currentCell || currentRow.length > 0) {
+                currentRow.push(currentCell.trim());
+                rows.push(currentRow);
+            }
+            return rows;
+        }
+
+        function getDayWithTimeShift() {
+            const now = new Date();
+            const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
+            const utcPlus5Time = new Date(utcTime + (5 * 60 * 60 * 1000));
+
+            let dayIndex = utcPlus5Time.getDay();
+            const hours = utcPlus5Time.getHours();
+            const minutes = utcPlus5Time.getMinutes();
+            console.log('Текущее время в UTC+5:', `${hours}:${minutes}`);
+
+            if (dayIndex === 0) {
+                return {
+                    displayDayIndex: 1, // Понедельник
+                    isSunday: true,
+                    date: utcPlus5Time
+                };
+            }
+
+            const isAfter16 = (hours > 16) || (hours === 16 && minutes >= 0);
+            if (isAfter16) {
+                dayIndex = (dayIndex + 1) % 7;
+                utcPlus5Time.setDate(utcPlus5Time.getDate() + 1);
+            }
+
+            return {
+                displayDayIndex: dayIndex,
+                isSunday: false,
+                date: utcPlus5Time
+            };
+        }
+
+        function displaySchedule(data, containerId, title) {
+            const { displayDayIndex, isSunday, date } = getDayWithTimeShift();
+            const days = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
+            const currentDay = days[displayDayIndex];
+            
+            console.log(`Отображаемый день для ${title}:`, currentDay);
+
+            const headerRow = data[0] || [];
+            console.log(`Заголовки таблицы (${title}):`, headerRow);
+            const dayIndex = headerRow.indexOf(currentDay);
+
+            if (dayIndex === -1) {
+                console.log(`Дни в таблице (${title}):`, headerRow);
+                document.getElementById(containerId).innerHTML = `<p class="error">Данные для текущего дня (${currentDay}) не найдены</p>`;
+                return;
+            }
+
+            const scheduleTimes = displayDayIndex === 6 ? SCHEDULE_SATURDAY : SCHEDULE_WEEKDAYS;
+            const currentTime = date.getHours() * 60 + date.getMinutes();
+
+            let html = `<h2>${currentDay}</h2>`;
+            if (isSunday) {
+                html += `<p class="info">Сегодня воскресенье, показываем расписание на понедельник.</p>`;
+            }
+
+            for (let i = 1; i < data.length; i++) {
+                const lessonWithTime = data[i][0] || '';
+                const subject = data[i][dayIndex] || 'Нет урока';
+
+                const match = lessonWithTime.match(/(.*)\s*\((.*)\)/);
+                const lesson = match ? match[1].trim() : lessonWithTime;
+                const time = scheduleTimes[lesson] || '-';
+
+                let isCurrentLesson = false;
+                if (!isSunday && time !== '-') {
+                    const [start, end] = time.split('–').map(t => {
+                        const [h, m] = t.split(':').map(Number);
+                        return h * 60 + m;
+                    });
+                    if (currentTime >= start && currentTime <= end) {
+                        isCurrentLesson = true;
+                    }
+                }
+
+                if (lesson) {
+                    const subjectParts = subject.split(' ');
+                    const roomNumber = subject === 'Нет урока' ? '' : subjectParts.pop();
+                    const subjectName = subject === 'Нет урока' ? 'Нет урока' : subjectParts.join(' ');
+
+                    const colorClass = getSubjectColor(subjectName);
+                    html += `
+                        <div class="lesson-card ${colorClass} ${isCurrentLesson ? 'current-lesson' : ''}" style="--index: ${i - 1}">
+                            ${lesson}<br>
+                            ${subjectName}<br>
+                            ${time}<br>
+                            ${subject === 'Нет урока' ? '' : roomNumber + ' кабинет'}
+                        </div>
+                    `;
+                }
+            }
+
+            document.getElementById(containerId).innerHTML = html;
+        }
+
+        // Функция для форматирования даты в формате гггг-мм-дд
+        function formatDateForMenu(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        // Функция для открытия меню
+        function openMenu() {
+            const { date, isSunday } = getDayWithTimeShift();
+            const menuDate = new Date(date);
+
+            // Если сегодня воскресенье, используем дату понедельника
+            if (isSunday) {
+                menuDate.setDate(menuDate.getDate() + 1);
+            }
+
+            const formattedDate = formatDateForMenu(menuDate);
+            const encodedMenuUrl = encodeURIComponent(`https://aksioma.obrku.ru/food/${formattedDate}-sm.xlsx`);
+            const finalUrl = `https://view.officeapps.live.com/op/view.aspx?src=${encodedMenuUrl}&wdOrigin=BROWSELINK`;
+            window.open(finalUrl, '_blank');
+        }
+
+        // Функция для отображения счетчика
+        function showCountdown() {
+            const { date } = getDayWithTimeShift();
+            const currentDate = new Date(date); // Уже в UTC+5
+
+            // Устанавливаем дату последнего звонка (20 мая 2025 года) в UTC+5
+            const lastBellDate = new Date('2025-05-20T00:00:00');
+            const utcTimeLastBell = lastBellDate.getTime() + (lastBellDate.getTimezoneOffset() * 60000);
+            const lastBellDateUTC5 = new Date(utcTimeLastBell + (5 * 60 * 60 * 1000));
+
+            // Устанавливаем время на 00:00 для обеих дат, чтобы сравнивать только дни
+            currentDate.setHours(0, 0, 0, 0);
+            lastBellDateUTC5.setHours(0, 0, 0, 0);
+
+            // Рассчитываем общее количество дней (без исключения праздничных дней)
+            const timeDifference = lastBellDateUTC5 - currentDate;
+            const totalDays = Math.ceil(timeDifference / (1000 * 60 * 60 * 24));
+
+            // Праздничные дни (1, 2, 3, 8, 9, 10 мая 2025 года)
+            const holidays = [
+                new Date('2025-05-01T00:00:00'),
+                new Date('2025-05-02T00:00:00'),
+                new Date('2025-05-03T00:00:00'),
+                new Date('2025-05-08T00:00:00'),
+                new Date('2025-05-09T00:00:00'),
+                new Date('2025-05-10T00:00:00')
+            ].map(date => {
+                const utcTime = date.getTime() + (date.getTimezoneOffset() * 60000);
+                const dateUTC5 = new Date(utcTime + (5 * 60 * 60 * 1000));
+                dateUTC5.setHours(0, 0, 0, 0);
+                return dateUTC5.getTime();
+            });
+
+            // Рассчитываем количество учебных дней (исключая воскресенья и праздничные дни)
+            let schoolDays = 0;
+            const tempDate = new Date(currentDate);
+            while (tempDate <= lastBellDateUTC5) {
+                const tempDateTime = tempDate.getTime();
+                const isHoliday = holidays.includes(tempDateTime);
+                const isSunday = tempDate.getDay() === 0;
+
+                if (!isHoliday && !isSunday) {
+                    schoolDays++;
+                }
+
+                tempDate.setDate(tempDate.getDate() + 1);
+            }
+
+            // Проверяем, не прошли ли мы дату последнего звонка
+            const daysDifference = totalDays;
+
+            const countdownElement = document.getElementById('countdown-result');
+            if (daysDifference > 0) {
+                countdownElement.innerHTML = `До последнего звонка осталось ${totalDays} дней, из них ${schoolDays} учебных дней!`;
+            } else if (daysDifference === 0) {
+                countdownElement.innerHTML = `Сегодня последний звонок!`;
+            } else {
+                countdownElement.innerHTML = `Последний звонок уже прошел!`;
+            }
+        }
+
+        // Уведомления о ближайших событиях
+        const events = [
+            { date: '2025-05-01', name: 'День труда (выходной)' },
+            { date: '2025-05-02', name: 'День труда (выходной)' },
+            { date: '2025-05-03', name: 'День труда (выходной)' },
+            { date: '2025-05-08', name: 'День Победы (выходной)' },
+            { date: '2025-05-09', name: 'День Победы (выходной)' },
+            { date: '2025-05-10', name: 'День Победы (выходной)' },
+            { date: '2025-05-20', name: 'Последний звонок' }
+        ];
+
+        function showUpcomingEvent() {
+            const { date } = getDayWithTimeShift();
+            const currentDate = new Date(date);
+            currentDate.setHours(0, 0, 0, 0);
+
+            let nearestEvent = null;
+            let daysToEvent = Infinity;
+
+            events.forEach(event => {
+                const eventDate = new Date(event.date);
+                eventDate.setHours(0, 0, 0, 0);
+                const timeDiff = eventDate - currentDate;
+                const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+                if (daysDiff >= 0 && daysDiff < daysToEvent) {
+                    daysToEvent = daysDiff;
+                    nearestEvent = event;
+                }
+            });
+
+            const eventElement = document.getElementById('upcoming-event');
+            if (nearestEvent && daysToEvent <= 7) { // Показываем, если событие в течение недели
+                eventElement.innerHTML = `Ближайшее событие: ${nearestEvent.name} через ${daysToEvent} дней!`;
+            } else {
+                eventElement.innerHTML = '';
+            }
+        }
+
+        // Отображение текущей даты и времени
+        function updateCurrentTime() {
+            const { date } = getDayWithTimeShift();
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            document.getElementById('current-time').innerHTML = `Сегодня: ${day}.${month}.${year}, ${hours}:${minutes} UTC+5`;
+        }
+
+        // Переключение темы
+        function toggleTheme() {
+            const themeButton = document.getElementById('theme-button');
+            const currentTheme = localStorage.getItem('theme') || 'system';
+
+            if (currentTheme === 'dark') {
+                // Переключаем на системную тему
+                document.body.classList.remove('dark-theme');
+                document.body.classList.remove('light-theme');
+                localStorage.setItem('theme', 'system');
+                applySystemTheme();
+                themeButton.innerHTML = '⚙️';
+            } else if (currentTheme === 'system') {
+                // Переключаем на светлую тему
+                document.body.classList.remove('dark-theme');
+                document.body.classList.add('light-theme');
+                localStorage.setItem('theme', 'light');
+                themeButton.innerHTML = '☀️';
+            } else {
+                // Переключаем на темную тему
+                document.body.classList.remove('light-theme');
+                document.body.classList.add('dark-theme');
+                localStorage.setItem('theme', 'dark');
+                themeButton.innerHTML = '🌙';
+            }
+        }
+
+        // Применение системной темы
+        function applySystemTheme() {
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                document.body.classList.add('dark-theme');
+            } else {
+                document.body.classList.add('light-theme');
+            }
+        }
+
+        async function loadSchedules() {
+            const mainData = await fetchSchedule(MAIN_SHEET_URL);
+            const electivesData = await fetchSchedule(ELECTIVES_SHEET_URL);
+
+            if (mainData) {
+                displaySchedule(mainData, 'main-schedule', 'Обычное расписание');
+            } else {
+                document.getElementById('main-schedule').innerHTML = `<p class="error">Не удалось загрузить обычное расписание</p>`;
+            }
+
+            if (electivesData) {
+                displaySchedule(electivesData, 'electives-schedule', 'Расписание элективов');
+            } else {
+                document.getElementById('electives-schedule').innerHTML = `<p class="error">Не удалось загрузить расписание элективов</p>`;
+            }
+
+            showUpcomingEvent();
+            updateCurrentTime();
+        }
+
+        // Инициализация темы
+        const savedTheme = localStorage.getItem('theme') || 'system';
+        const themeButton = document.getElementById('theme-button');
+        if (savedTheme === 'dark') {
+            document.body.classList.add('dark-theme');
+            themeButton.innerHTML = '🌙';
+        } else if (savedTheme === 'light') {
+            document.body.classList.add('light-theme');
+            themeButton.innerHTML = '☀️';
+        } else {
+            applySystemTheme();
+            themeButton.innerHTML = '⚙️';
+            localStorage.setItem('theme', 'system');
+        }
+
+        // Слушаем изменения системной темы
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'system') {
+                if (e.matches) {
+                    document.body.classList.remove('light-theme');
+                    document.body.classList.add('dark-theme');
+                } else {
+                    document.body.classList.remove('dark-theme');
+                    document.body.classList.add('light-theme');
+                }
+            }
+        });
+
+        loadSchedules();
+        setInterval(loadSchedules, 300000);
+        setInterval(updateCurrentTime, 60000); // Обновляем время каждую минуту
+    </script>
+</body>
+</html>
