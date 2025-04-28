@@ -447,4 +447,3 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e =
 loadSchedules();
 setInterval(loadSchedules, 300000);
 setInterval(updateCurrentTime, 60000);
-</x
