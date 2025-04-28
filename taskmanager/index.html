@@ -138,10 +138,16 @@
         const fileInput = document.getElementById('file-input');
         let tasks = [];
 
-        // Request notification permission on load
+        // Request notification permission
         function requestNotificationPermission() {
             if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
-                Notification.requestPermission();
+                Notification.requestPermission().then(permission => {
+                    if (permission !== 'granted') {
+                        alert('Notifications are disabled. Enable them in your browser settings to receive task reminders.');
+                    }
+                });
+            } else if (Notification.permission === 'denied') {
+                alert('Notifications are disabled. Enable them in your browser settings to receive task reminders.');
             }
         }
 
@@ -150,13 +156,9 @@
             const saved = localStorage.getItem('springTasks');
             if (saved) {
                 tasks = JSON.parse(saved);
-                tasks.forEach(task => {
-                    if (task.dueDate) {
-                        scheduleNotification(task);
-                    }
-                });
             }
             updateTaskList();
+            checkDueTasks(); // Start checking for due tasks
         }
 
         // Save tasks to localStorage
@@ -190,21 +192,27 @@
             });
         }
 
-        // Schedule a notification for a task
-        function scheduleNotification(task) {
-            if (!task.dueDate || task.completed) return;
-            const dueTime = new Date(task.dueDate).getTime();
+        // Check for due tasks and send notifications
+        function checkDueTasks() {
             const now = Date.now();
-            if (dueTime <= now) return;
-
-            setTimeout(() => {
-                if (Notification.permission === 'granted' && !task.completed) {
-                    new Notification('Task Reminder', {
-                        body: `Task "${task.text}" is due!`,
-                        icon: 'https://via.placeholder.com/16/6b946b/fff?text=T' // Optional icon
-                    });
+            tasks.forEach((task, index) => {
+                if (task.dueDate && !task.completed && !task.notified) {
+                    const dueTime = new Date(task.dueDate).getTime();
+                    if (dueTime <= now) {
+                        if (Notification.permission === 'granted') {
+                            new Notification('Task Reminder', {
+                                body: `Task "${task.text}" is due!`,
+                                icon: 'https://via.placeholder.com/16/6b946b/fff?text=T'
+                            });
+                            console.log(`Notification sent for task: ${task.text}`);
+                        }
+                        task.notified = true; // Mark as notified to prevent duplicates
+                        saveToLocalStorage();
+                    }
                 }
-            }, dueTime - now);
+            });
+            // Check every 30 seconds
+            setTimeout(checkDueTasks, 30000);
         }
 
         // Add a new task
@@ -215,11 +223,11 @@
                 return;
             }
             const dueDate = dueDateInput.value ? new Date(dueDateInput.value).toISOString() : null;
-            const task = { text, completed: false, dueDate };
+            const task = { text, completed: false, dueDate, notified: false };
             tasks.push(task);
             saveToLocalStorage();
             updateTaskList();
-            scheduleNotification(task);
+            console.log(`Task added: ${text}, Due: ${dueDate || 'None'}`);
             taskInput.value = '';
             dueDateInput.value = '';
         }
@@ -227,6 +235,7 @@
         // Toggle task completion
         function toggleComplete(index) {
             tasks[index].completed = !tasks[index].completed;
+            if (tasks[index].completed) tasks[index].notified = true; // Stop notifications for completed tasks
             saveToLocalStorage();
             updateTaskList();
         }
@@ -295,13 +304,13 @@
                         importedTasks.push({
                             text: text.trim(),
                             completed: status === 'X',
-                            dueDate
+                            dueDate,
+                            notified: false
                         });
                     }
                     tasks = importedTasks;
                     saveToLocalStorage();
                     updateTaskList();
-                    tasks.forEach(task => scheduleNotification(task));
                     alert('Tasks imported successfully');
                     fileInput.value = '';
                 } catch (error) {
