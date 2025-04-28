@@ -1,131 +1,127 @@
-<script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-        </script><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Terminal Task Manager</title>
+    <title>Spring Task Manager</title>
     <style>
         body {
             margin: 0;
             padding: 0;
-            background: #1a1a1a;
-            color: #00ff00;
-            font-family: 'Courier New', monospace;
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(to bottom, #e6f3e6, #f0fff0);
+            color: #333;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
-            overflow: hidden;
+            min-height: 100vh;
         }
         #container {
             width: 90%;
             max-width: 1200px;
-            height: 80%;
             display: flex;
             gap: 20px;
-        }
-        #terminal {
-            flex: 1;
-            background: #000;
-            border: 2px solid #00ff00;
-            border-radius: 5px;
             padding: 20px;
-            overflow-y: auto;
-            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+            background: #fff;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        #input-section, #task-list {
+            flex: 1;
+            padding: 20px;
+            border-radius: 10px;
+            background: #f8fff8;
+        }
+        #input-section {
+            border: 2px solid #a8d5a8;
         }
         #task-list {
-            flex: 1;
-            background: #000;
-            border: 2px solid #00ff00;
-            border-radius: 5px;
-            padding: 20px;
+            border: 2px solid #a8d5a8;
             overflow-y: auto;
-            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+            max-height: 500px;
         }
-        #output {
-            margin-bottom: 20px;
+        h1, h2 {
+            color: #4a704a;
+            text-align: center;
+            font-family: 'Georgia', serif;
         }
-        #input-line {
+        h1 {
+            margin-top: 0;
+            font-size: 24px;
+        }
+        #task-form {
             display: flex;
-            align-items: center;
+            flex-direction: column;
+            gap: 10px;
         }
-        #prompt {
-            margin-right: 10px;
-        }
-        #input {
-            background: none;
-            border: none;
-            color: #00ff00;
-            font-family: 'Courier New', monospace;
+        #task-input, #due-date {
+            padding: 10px;
+            border: 1px solid #a8d5a8;
+            border-radius: 5px;
             font-size: 16px;
-            outline: none;
-            flex: 1;
         }
-        .task-completed {
+        #due-date {
+            width: 100%;
+        }
+        button {
+            padding: 10px;
+            background: #6b946b;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #5a825a;
+        }
+        #task-output .task-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            margin-bottom: 10px;
+            background: #e6f3e6;
+            border-radius: 5px;
+            border: 1px solid #d4e4d4;
+        }
+        .task-item.completed {
+            background: #d4e4d4;
             text-decoration: line-through;
-            color: #008000;
+            color: #666;
         }
-        .error {
-            color: #ff0000;
+        .task-item button {
+            padding: 5px 10px;
+            font-size: 14px;
         }
         #file-input {
             display: none;
         }
-        #task-list h2 {
-            margin: 0 0 20px 0;
-            color: #00ff00;
+        #action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
         }
-        .task-item {
-            margin-bottom: 10px;
+        .no-tasks {
+            text-align: center;
+            color: #666;
         }
     </style>
 </head>
 <body>
     <div id="container">
-        <div id="terminal">
-            <div id="output"></div>
-            <div id="input-line">
-                <span id="prompt">$</span>
-                <input type="text" id="input" autofocus>
+        <div id="input-section">
+            <h1>Spring Task Manager</h1>
+            <div id="task-form">
+                <input type="text" id="task-input" placeholder="Enter a new task">
+                <input type="datetime-local" id="due-date" placeholder="Set due date (optional)">
+                <button onclick="addTask()">Add Task</button>
+                <div id="action-buttons">
+                    <button onclick="exportTasks()">Export Tasks</button>
+                    <button onclick="document.getElementById('file-input').click()">Import Tasks</button>
+                    <button onclick="deleteAllTasks()">Delete All</button>
+                </div>
             </div>
         </div>
         <div id="task-list">
@@ -136,38 +132,44 @@
     <input type="file" id="file-input" accept=".txt">
 
     <script>
-        const output = document.getElementById('output');
-        const input = document.getElementById('input');
-        const fileInput = document.getElementById('file-input');
+        const taskInput = document.getElementById('task-input');
+        const dueDateInput = document.getElementById('due-date');
         const taskOutput = document.getElementById('task-output');
+        const fileInput = document.getElementById('file-input');
         let tasks = [];
 
-        // Load tasks from localStorage on startup
+        // Request notification permission on load
+        function requestNotificationPermission() {
+            if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+                Notification.requestPermission();
+            }
+        }
+
+        // Load tasks from localStorage
         function loadFromLocalStorage() {
-            const saved = localStorage.getItem('terminalTasks');
+            const saved = localStorage.getItem('springTasks');
             if (saved) {
                 tasks = JSON.parse(saved);
+                tasks.forEach(task => {
+                    if (task.dueDate) {
+                        scheduleNotification(task);
+                    }
+                });
             }
             updateTaskList();
         }
 
         // Save tasks to localStorage
         function saveToLocalStorage() {
-            localStorage.setItem('terminalTasks', JSON.stringify(tasks));
+            localStorage.setItem('springTasks', JSON.stringify(tasks));
         }
 
-        function addOutput(text, className = '') {
-            const div = document.createElement('div');
-            div.textContent = text;
-            if (className) div.className = className;
-            output.appendChild(div);
-            output.scrollTop = output.scrollHeight;
-        }
-
+        // Update task list display
         function updateTaskList() {
             taskOutput.innerHTML = '';
             if (tasks.length === 0) {
                 const div = document.createElement('div');
+                div.className = 'no-tasks';
                 div.textContent = 'No tasks.';
                 taskOutput.appendChild(div);
                 return;
@@ -175,30 +177,86 @@
             tasks.forEach((task, index) => {
                 const div = document.createElement('div');
                 div.className = 'task-item';
-                const status = task.completed ? '[X]' : '[ ]';
-                div.textContent = `${index + 1}. ${status} ${task.text}`;
-                if (task.completed) div.className += ' task-completed';
+                if (task.completed) div.className += ' completed';
+                const dueDateText = task.dueDate ? ` (Due: ${new Date(task.dueDate).toLocaleString()})` : '';
+                div.innerHTML = `
+                    <span>${index + 1}. ${task.text}${dueDateText}</span>
+                    <div>
+                        <button onclick="toggleComplete(${index})">${task.completed ? 'Undo' : 'Complete'}</button>
+                        <button onclick="deleteTask(${index})">Delete</button>
+                    </div>
+                `;
                 taskOutput.appendChild(div);
             });
         }
 
-        function displayTasks() {
-            if (tasks.length === 0) {
-                addOutput('No tasks.');
+        // Schedule a notification for a task
+        function scheduleNotification(task) {
+            if (!task.dueDate || task.completed) return;
+            const dueTime = new Date(task.dueDate).getTime();
+            const now = Date.now();
+            if (dueTime <= now) return;
+
+            setTimeout(() => {
+                if (Notification.permission === 'granted' && !task.completed) {
+                    new Notification('Task Reminder', {
+                        body: `Task "${task.text}" is due!`,
+                        icon: 'https://via.placeholder.com/16/6b946b/fff?text=T' // Optional icon
+                    });
+                }
+            }, dueTime - now);
+        }
+
+        // Add a new task
+        function addTask() {
+            const text = taskInput.value.trim();
+            if (!text) {
+                alert('Task description is required.');
                 return;
             }
-            tasks.forEach((task, index) => {
-                const status = task.completed ? '[X]' : '[ ]';
-                const text = `${index + 1}. ${status} ${task.text}`;
-                addOutput(text, task.completed ? 'task-completed' : '');
-            });
+            const dueDate = dueDateInput.value ? new Date(dueDateInput.value).toISOString() : null;
+            const task = { text, completed: false, dueDate };
+            tasks.push(task);
+            saveToLocalStorage();
+            updateTaskList();
+            scheduleNotification(task);
+            taskInput.value = '';
+            dueDateInput.value = '';
+        }
+
+        // Toggle task completion
+        function toggleComplete(index) {
+            tasks[index].completed = !tasks[index].completed;
+            saveToLocalStorage();
+            updateTaskList();
+        }
+
+        // Delete a task
+        function deleteTask(index) {
+            tasks.splice(index, 1);
+            saveToLocalStorage();
+            updateTaskList();
+        }
+
+        // Delete all tasks
+        function deleteAllTasks() {
+            if (tasks.length === 0) {
+                alert('No tasks to delete.');
+                return;
+            }
+            if (confirm('Are you sure you want to delete all tasks?')) {
+                tasks = [];
+                saveToLocalStorage();
+                updateTaskList();
+            }
         }
 
         // Export tasks as TXT file
         function exportTasks() {
             const lines = tasks.map(task => {
                 const status = task.completed ? '[X]' : '[ ]';
-                return `${status} ${task.text}`;
+                const dueDate = task.dueDate ? ` [Due: ${new Date(task.dueDate).toLocaleString()}]` : '';
+                return `${status} ${task.text}${dueDate}`;
             });
             const data = lines.join('\n');
             const blob = new Blob([data], { type: 'text/plain' });
@@ -208,7 +266,7 @@
             a.download = 'tasks.txt';
             a.click();
             URL.revokeObjectURL(url);
-            addOutput('Tasks exported to tasks.txt');
+            alert('Tasks exported to tasks.txt');
         }
 
         // Import tasks from TXT file
@@ -222,129 +280,45 @@
                     const lines = e.target.result.split('\n').filter(line => line.trim());
                     const importedTasks = [];
                     for (const line of lines) {
-                        const match = line.match(/^\[(X| )\]\s+(.+)$/);
+                        const match = line.match(/^\[(X| )\]\s+(.+?)(?:\s+\[Due:\s+(.+?)\])?$/);
                         if (!match) {
-                            throw new Error('Invalid format: Each line must be "[X] task" or "[ ] task"');
+                            throw new Error('Invalid format: Each line must be "[X] task" or "[ ] task [Due: date]"');
                         }
-                        const [, status, text] = match;
+                        const [, status, text, dueDateStr] = match;
+                        let dueDate = null;
+                        if (dueDateStr) {
+                            const parsedDate = new Date(dueDateStr);
+                            if (!isNaN(parsedDate)) {
+                                dueDate = parsedDate.toISOString();
+                            }
+                        }
                         importedTasks.push({
                             text: text.trim(),
-                            completed: status === 'X'
+                            completed: status === 'X',
+                            dueDate
                         });
                     }
                     tasks = importedTasks;
                     saveToLocalStorage();
                     updateTaskList();
-                    addOutput('Tasks imported successfully');
-                    fileInput.value = ''; // Reset file input
+                    tasks.forEach(task => scheduleNotification(task));
+                    alert('Tasks imported successfully');
+                    fileInput.value = '';
                 } catch (error) {
-                    addOutput(`Error importing tasks: ${error.message}`, 'error');
+                    alert(`Error importing tasks: ${error.message}`);
                 }
             };
             reader.readAsText(file);
         }
 
-        function handleCommand(command) {
-            const [cmd, ...args] = command.trim().split(' ');
-            const argText = args.join(' ');
-
-            switch (cmd.toLowerCase()) {
-                case 'add':
-                    if (!argText) {
-                        addOutput('Error: Task description required.', 'error');
-                        return;
-                    }
-                    tasks.push({ text: argText, completed: false });
-                    saveToLocalStorage();
-                    updateTaskList();
-                    addOutput(`Task added: ${argText}`);
-                    break;
-
-                case 'list':
-                    displayTasks();
-                    break;
-
-                case 'complete':
-                    const index = parseInt(argText) - 1;
-                    if (isNaN(index) || index < 0 || index >= tasks.length) {
-                        addOutput('Error: Invalid task number.', 'error');
-                        return;
-                    }
-                    tasks[index].completed = true;
-                    saveToLocalStorage();
-                    updateTaskList();
-                    addOutput(`Task ${index + 1} marked as completed.`);
-                    break;
-
-                case 'delete':
-                    if (argText.toLowerCase() === 'all') {
-                        if (tasks.length === 0) {
-                            addOutput('No tasks to delete.');
-                            return;
-                        }
-                        tasks = [];
-                        saveToLocalStorage();
-                        updateTaskList();
-                        addOutput('All tasks deleted.');
-                        return;
-                    }
-                    const delIndex = parseInt(argText) - 1;
-                    if (isNaN(delIndex) || delIndex < 0 || delIndex >= tasks.length) {
-                        addOutput('Error: Invalid task number.', 'error');
-                        return;
-                    }
-                    const deleted = tasks.splice(delIndex, 1)[0];
-                    saveToLocalStorage();
-                    updateTaskList();
-                    addOutput(`Task deleted: ${deleted.text}`);
-                    break;
-
-                case 'clear':
-                    output.innerHTML = '';
-                    break;
-
-                case 'export':
-                    exportTasks();
-                    break;
-
-                case 'import':
-                    fileInput.click();
-                    break;
-
-                case 'help':
-                    addOutput('Commands:');
-                    addOutput('  add <task>    - Add a new task');
-                    addOutput('  list          - List all tasks');
-                    addOutput('  complete <n>  - Mark task n as completed');
-                    addOutput('  delete <n>    - Delete task n');
-                    addOutput('  delete all    - Delete all tasks');
-                    addOutput('  export        - Export tasks to TXT file');
-                    addOutput('  import        - Import tasks from TXT file');
-                    addOutput('  clear         - Clear terminal');
-                    addOutput('  help          - Show this help');
-                    break;
-
-                default:
-                    if (command) {
-                        addOutput(`Unknown command: ${command}. Type 'help' for commands.`, 'error');
-                    }
-            }
-        }
-
         // Initialize
+        requestNotificationPermission();
         loadFromLocalStorage();
-        addOutput('Welcome to Terminal Task Manager. Type "help" for commands.');
 
         // Event listeners
-        input.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                const command = input.value;
-                addOutput(`$ ${command}`);
-                handleCommand(command);
-                input.value = '';
-            }
+        taskInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') addTask();
         });
-
         fileInput.addEventListener('change', importTasks);
     </script>
 </body>
