@@ -139,6 +139,7 @@
         .green-pastel { background-color: #c8e6c9; } /* Химия, Биология, География */
         .purple-pastel { background-color: #e1bee7; } /* Физкультура, ОБЗР */
         .default-pastel { background-color: #f5f5f5; } /* Для предметов, не входящих в категории */
+        .gold{background-color: #E7D27C;} /*Последний звонок*/
         /* Стили для кнопок и счетчика */
         .countdown-container {
             max-width: 800px;
@@ -300,7 +301,7 @@
         <button class="task-manager-button" onclick="openTaskManager()">Task Manager</button>
         <div id="countdown-result" class="countdown-result"></div>
         <div class="footer">
-            by Makrivich 2025<br>ver. r2.1.1
+            by Makrivich 2025<br>ver. r2.1.2
         </div>
     </div>
 
@@ -375,6 +376,10 @@
                 subjectLower.includes('технология')
             ) {
                 return 'purple-pastel';
+            } else if (
+                subjectLower.includes('последний звонок')
+            ) {
+                return 'gold';
             }
             return 'default-pastel';
         }
