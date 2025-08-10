@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Расписание</title>
+
 <style>
 :root {
     --bg-light: #f2c48d;
@@ -15,6 +16,7 @@
     --accent: #c35a1a;
     --accent-dark: #f0c08b;
 }
+
 body {
     margin: 0;
     padding: 20px;
@@ -24,6 +26,7 @@ body {
     color: var(--text-light);
     transition: background 0.3s, color 0.3s;
 }
+
 /* Хедер */
 .header {
     position: fixed;
@@ -39,8 +42,10 @@ body {
     border-bottom: 1px solid rgba(0,0,0,0.1);
     z-index: 1000;
 }
+
 .header .info { font-size: 14px; color: var(--muted-light); }
 .current-lesson-info { font-weight: bold; color: var(--accent); }
+
 /* Карточки */
 .lesson-card {
     padding: 15px;
@@ -57,6 +62,7 @@ body {
 .current-lesson {
     border: 2px solid var(--accent);
 }
+
 /* Цвета предметов — светлая тема */
 .red-pastel { background-color: #f4a698; }
 .blue-pastel { background-color: #f7c27b; }
@@ -66,6 +72,7 @@ body {
 .purple-pastel { background-color: #d8a9d1; }
 .default-pastel { background-color: #f5f5dc; }
 .gold { background-color: #ffdf80; }
+
 /* Цвета предметов — тёмная тема */
 .dark-theme .red-pastel { background-color: #a15f54; }
 .dark-theme .blue-pastel { background-color: #a37a4f; }
@@ -75,6 +82,7 @@ body {
 .dark-theme .purple-pastel { background-color: #7b5d77; }
 .dark-theme .default-pastel { background-color: #3e3a35; }
 .dark-theme .gold { background-color: #a6853a; }
+
 /* Тёмная тема */
 .dark-theme {
     background: var(--bg-dark);
@@ -86,6 +94,7 @@ body {
 }
 .dark-theme .info { color: var(--muted-dark); }
 .dark-theme .current-lesson-info { color: var(--accent-dark); }
+
 /* Кнопки */
 .menu-button, .countdown-button, .task-manager-button {
     padding: 10px 14px;
@@ -102,6 +111,7 @@ body {
 .menu-button:hover, .countdown-button:hover, .task-manager-button:hover {
     opacity: 0.85;
 }
+
 /* Прочее */
 .footer {
     text-align: center;
@@ -110,23 +120,6 @@ body {
     color: var(--muted-light);
 }
 .dark-theme .footer { color: var(--muted-dark); }
-
-/* Стиль для кнопки темы без фона */
-.theme-button {
-    background: none !important;
-    border: none !important;
-    font-size: 20px;
-    cursor: pointer;
-    padding: 5px;
-    border-radius: 50%;
-    transition: background-color 0.2s;
-}
-.theme-button:hover {
-    background-color: rgba(0, 0, 0, 0.1) !important; /* Полупрозрачный фон при наведении */
-}
-.dark-theme .theme-button:hover {
-    background-color: rgba(255, 255, 255, 0.1) !important;
-}
 </style>
 </head>
 <body>
@@ -135,9 +128,12 @@ body {
         <div id="current-lesson" class="current-lesson-info">Нет текущего урока</div>
         <button class="theme-button" onclick="toggleTheme()" id="theme-button">⚙️</button>
     </div>
+
     <h1>Расписание</h1>
     <div id="main-schedule" class="schedule-container"><p class="loading">Подождите, расписание загружается...</p></div>
-    <!-- Расписание элективов удалено -->
+    <h3>Расписание элективов</h3>
+    <div id="electives-schedule" class="schedule-container"><p class="loading">Подождите, расписание загружается...</p></div>
+
     <div class="countdown-container">
         <div id="upcoming-event" class="info"></div>
         <button class="menu-button" onclick="openMenu()">Открыть меню столовой</button>
@@ -146,9 +142,12 @@ body {
         <div id="countdown-result" class="countdown-result"></div>
         <div class="footer">by Makrivich 2025<br>ver. r2.2</div>
     </div>
+
 <script>
-// URL только для основного расписания (элективы удалены)
+// URL для основного расписания и расписания элективов
         const MAIN_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1lWqIJaWWXceiE_CWyIdzMRLcRoQa-ulnT5tJfgLDo0o/export?format=csv&gid=0';
+        const ELECTIVES_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1qS4JSUM2DqFgZhmiMfaJ8VU-t2DvpRtJyadEQkdxujA/export?format=csv';
+
         // Расписание звонков
         const SCHEDULE_WEEKDAYS = {
             '0 урок': '7:45–8:25',
@@ -161,6 +160,7 @@ body {
             '7 урок': '13:55–14:35',
             '8 урок': '14:45–15:20'
         };
+
         const SCHEDULE_SATURDAY = {
             '0 урок': '7:45–8:25',
             '1 урок': '8:30–9:10',
@@ -172,9 +172,11 @@ body {
             '7 урок': '13:45–14:25',
             '8 урок': '14:45–15:20'
         };
+
         // Определение цвета карточки в зависимости от предмета
         function getSubjectColor(subject) {
             if (!subject || subject === 'Нет урока') return 'default-pastel';
+
             const subjectLower = subject.toLowerCase();
             if (subjectLower.includes('русский') || subjectLower.includes('английский')) {
                 return 'red-pastel';
@@ -219,6 +221,7 @@ body {
             }
             return 'default-pastel';
         }
+
         async function fetchSchedule(url) {
             try {
                 const response = await fetch(url);
@@ -235,11 +238,13 @@ body {
                 return null;
             }
         }
+
         function parseCSV(text) {
             const rows = [];
             let currentRow = [];
             let currentCell = '';
             let insideQuotes = false;
+
             for (let i = 0; i < text.length; i++) {
                 const char = text[i];
                 if (char === '"') {
@@ -247,8 +252,7 @@ body {
                 } else if (char === ',' && !insideQuotes) {
                     currentRow.push(currentCell.trim());
                     currentCell = '';
-                } else if (char === '
-' && !insideQuotes) {
+                } else if (char === '\n' && !insideQuotes) {
                     currentRow.push(currentCell.trim());
                     rows.push(currentRow);
                     currentRow = [];
@@ -263,14 +267,17 @@ body {
             }
             return rows;
         }
+
         function getDayWithTimeShift() {
             const now = new Date();
             const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
             const utcPlus5Time = new Date(utcTime + (5 * 60 * 60 * 1000));
+
             let dayIndex = utcPlus5Time.getDay();
             const hours = utcPlus5Time.getHours();
             const minutes = utcPlus5Time.getMinutes();
             console.log('Текущее время в UTC+5:', `${hours}:${minutes}`);
+
             if (dayIndex === 0) {
                 return {
                     displayDayIndex: 1,
@@ -278,44 +285,56 @@ body {
                     date: utcPlus5Time
                 };
             }
+
             const isAfter16 = (hours > 16) || (hours === 16 && minutes >= 0);
             if (isAfter16) {
                 dayIndex = (dayIndex + 1) % 7;
                 utcPlus5Time.setDate(utcPlus5Time.getDate() + 1);
             }
+
             return {
                 displayDayIndex: dayIndex,
                 isSunday: false,
                 date: utcPlus5Time
             };
         }
+
         function displaySchedule(data, containerId, title) {
             const { displayDayIndex, isSunday, date } = getDayWithTimeShift();
             const days = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
             const currentDay = days[displayDayIndex];
+            
             console.log(`Отображаемый день для ${title}:`, currentDay);
+
             const headerRow = data[0] || [];
             console.log(`Заголовки таблицы (${title}):`, headerRow);
             const dayIndex = headerRow.indexOf(currentDay);
+
             if (dayIndex === -1) {
                 console.log(`Дни в таблице (${title}):`, headerRow);
                 document.getElementById(containerId).innerHTML = `<p class="error">Данные для текущего дня (${currentDay}) не найдены</p>`;
                 return;
             }
+
             const scheduleTimes = displayDayIndex === 6 ? SCHEDULE_SATURDAY : SCHEDULE_WEEKDAYS;
             const currentTime = date.getHours() * 60 + date.getMinutes();
+
             let html = `<h2>${currentDay}</h2>`;
             if (isSunday) {
                 html += `<p class="info">Сегодня воскресенье, показываем расписание на понедельник.</p>`;
             }
+
             let currentLessonInfo = 'Нет текущего урока';
             let foundCurrentLesson = false;
+
             for (let i = 1; i < data.length; i++) {
                 const lessonWithTime = data[i][0] || '';
                 const subject = data[i][dayIndex] || 'Нет урока';
+
                 const match = lessonWithTime.match(/(.*)\s*\((.*)\)/);
                 const lesson = match ? match[1].trim() : lessonWithTime;
                 const time = scheduleTimes[lesson] || '-';
+
                 let isCurrentLesson = false;
                 if (!isSunday && time !== '-') {
                     const [start, end] = time.split('–').map(t => {
@@ -327,31 +346,36 @@ body {
                         foundCurrentLesson = true;
                     }
                 }
+
                 if (lesson) {
                     const subjectParts = subject.split(' ');
                     const roomNumber = subject === 'Нет урока' ? '' : subjectParts.pop();
                     const subjectName = subject === 'Нет урока' ? 'Нет урока' : subjectParts.join(' ');
+
                     const colorClass = getSubjectColor(subjectName);
-                    // Формат отображения урока изменен
                     html += `
                         <div class="lesson-card ${colorClass} ${isCurrentLesson ? 'current-lesson' : ''}" style="--index: ${i - 1}">
-                            <div class="lesson-title" style="font-weight: bold;">${lesson}</div>
-                            <div class="lesson-sub">${subjectName}</div>
+                            <span class="lesson-title">${lesson}</span>
+                            <span class="lesson-sub">${subjectName}</span>
                             <div style="margin-top:8px;color:var(--muted);font-size:13px">${time}</div>
                             ${subject === 'Нет урока' ? '' : `<div style="margin-top:6px;color:var(--muted);font-size:13px">${roomNumber} кабинет</div>`}
                         </div>
                     `;
+
                     if (isCurrentLesson && containerId === 'main-schedule') {
                         currentLessonInfo = `${subjectName} (${time})`;
                     }
                 }
             }
+
             document.getElementById(containerId).innerHTML = html;
+
             if (containerId === 'main-schedule') {
                 const currentLessonElement = document.getElementById('current-lesson');
                 currentLessonElement.innerHTML = currentLessonInfo;
             }
         }
+
         // Функция для форматирования даты в формате гггг-мм-дд
         function formatDateForMenu(date) {
             const year = date.getFullYear();
@@ -359,18 +383,22 @@ body {
             const day = String(date.getDate()).padStart(2, '0');
             return `${year}-${month}-${day}`;
         }
+
         // Функция для открытия меню
         function openMenu() {
             const { date, isSunday } = getDayWithTimeShift();
             const menuDate = new Date(date);
+
             if (isSunday) {
                 menuDate.setDate(menuDate.getDate() + 1);
             }
+
             const formattedDate = formatDateForMenu(menuDate);
             const encodedMenuUrl = encodeURIComponent(`https://aksioma.obrku.ru/food/${formattedDate}-sm.xlsx`);
             const finalUrl = `https://view.officeapps.live.com/op/view.aspx?src=${encodedMenuUrl}&wdOrigin=BROWSELINK`;
             window.open(finalUrl, '_blank');
         }
+
         // Функция для открытия Task Manager с уведомлением
         function openTaskManager() {
             const confirmed = confirm('Это бета-функция и может работать нестабильно. Продолжить?');
@@ -378,17 +406,22 @@ body {
                 window.open('https://makrivich.github.io/taskmanager/', '_blank');
             }
         }
+
         // Функция для отображения счетчика
         function showCountdown() {
             const { date } = getDayWithTimeShift();
             const currentDate = new Date(date);
+
             const lastBellDate = new Date('2025-05-20T00:00:00');
             const utcTimeLastBell = lastBellDate.getTime() + (lastBellDate.getTimezoneOffset() * 60000);
             const lastBellDateUTC5 = new Date(utcTimeLastBell + (5 * 60 * 60 * 1000));
+
             currentDate.setHours(0, 0, 0, 0);
             lastBellDateUTC5.setHours(0, 0, 0, 0);
+
             const timeDifference = lastBellDateUTC5 - currentDate;
             const totalDays = Math.ceil(timeDifference / (1000 * 60 * 60 * 24));
+
             const holidays = [
                 new Date('2025-05-01T00:00:00'),
                 new Date('2025-05-02T00:00:00'),
@@ -402,18 +435,23 @@ body {
                 dateUTC5.setHours(0, 0, 0, 0);
                 return dateUTC5.getTime();
             });
+
             let schoolDays = 0;
             const tempDate = new Date(currentDate);
             while (tempDate <= lastBellDateUTC5) {
                 const tempDateTime = tempDate.getTime();
                 const isHoliday = holidays.includes(tempDateTime);
                 const isSunday = tempDate.getDay() === 0;
+
                 if (!isHoliday && !isSunday) {
                     schoolDays++;
                 }
+
                 tempDate.setDate(tempDate.getDate() + 1);
             }
+
             const daysDifference = totalDays;
+
             const countdownElement = document.getElementById('countdown-result');
             if (daysDifference > 0) {
                 countdownElement.innerHTML = `До последнего звонка осталось ${totalDays} дней, из них ${schoolDays} учебных дней!`;
@@ -423,6 +461,7 @@ body {
                 countdownElement.innerHTML = `Последний звонок уже прошел!`;
             }
         }
+
         // Уведомления о ближайших событиях
         const events = [
             { date: '2025-05-01', name: 'День труда (выходной)' },
@@ -433,12 +472,15 @@ body {
             { date: '2025-05-10', name: 'День Победы (выходной)' },
             { date: '2025-05-20', name: 'Последний звонок' }
         ];
+
         function showUpcomingEvent() {
             const { date } = getDayWithTimeShift();
             const currentDate = new Date(date);
             currentDate.setHours(0, 0, 0, 0);
+
             let nearestEvent = null;
             let daysToEvent = Infinity;
+
             events.forEach(event => {
                 const eventDate = new Date(event.date);
                 eventDate.setHours(0, 0, 0, 0);
@@ -449,6 +491,7 @@ body {
                     nearestEvent = event;
                 }
             });
+
             const eventElement = document.getElementById('upcoming-event');
             if (nearestEvent && daysToEvent <= 7) {
                 eventElement.innerHTML = `Ближайшее событие: ${nearestEvent.name} через ${daysToEvent} дней!`;
@@ -456,6 +499,7 @@ body {
                 eventElement.innerHTML = '';
             }
         }
+
         // Отображение текущей даты и времени
         function updateCurrentTime() {
             const { date } = getDayWithTimeShift();
@@ -466,10 +510,12 @@ body {
             const year = date.getFullYear();
             document.getElementById('current-time').innerHTML = `Сегодня: ${day}.${month}.${year}, ${hours}:${minutes} UTC+5`;
         }
+
         // Переключение темы
         function toggleTheme() {
             const themeButton = document.getElementById('theme-button');
             const currentTheme = localStorage.getItem('theme') || 'system';
+
             if (currentTheme === 'dark') {
                 document.body.classList.remove('dark-theme');
                 document.body.classList.remove('light-theme');
@@ -488,6 +534,7 @@ body {
                 themeButton.innerHTML = '🌙';
             }
         }
+
         // Применение системной темы
         function applySystemTheme() {
             if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
@@ -496,24 +543,29 @@ body {
                 document.body.classList.add('light-theme');
             }
         }
+
         async function loadSchedules() {
             const mainDataPromise = fetchSchedule(MAIN_SHEET_URL);
-            // const electivesDataPromise = fetchSchedule(ELECTIVES_SHEET_URL); // Удалено
+            const electivesDataPromise = fetchSchedule(ELECTIVES_SHEET_URL);
+
             const mainData = await mainDataPromise;
             if (mainData) {
                 displaySchedule(mainData, 'main-schedule', 'Обычное расписание');
             } else {
                 document.getElementById('main-schedule').innerHTML = `<p class="error">Не удалось загрузить обычное расписание</p>`;
             }
-            // const electivesData = await electivesDataPromise; // Удалено
-            // if (electivesData) { // Удалено
-            //     displaySchedule(electivesData, 'electives-schedule', 'Расписание элективов'); // Удалено
-            // } else { // Удалено
-            //     document.getElementById('electives-schedule').innerHTML = `<p class="error">Не удалось загрузить расписание элективов</p>`; // Удалено
-            // } // Удалено
+
+            const electivesData = await electivesDataPromise;
+            if (electivesData) {
+                displaySchedule(electivesData, 'electives-schedule', 'Расписание элективов');
+            } else {
+                document.getElementById('electives-schedule').innerHTML = `<p class="error">Не удалось загрузить расписание элективов</p>`;
+            }
+
             showUpcomingEvent();
             updateCurrentTime();
         }
+
         // Инициализация темы
         const savedTheme = localStorage.getItem('theme') || 'system';
         const themeButton = document.getElementById('theme-button');
@@ -528,6 +580,7 @@ body {
             themeButton.innerHTML = '⚙️';
             localStorage.setItem('theme', 'system');
         }
+
         // Слушаем изменения системной темы
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
             const savedTheme = localStorage.getItem('theme');
@@ -541,6 +594,7 @@ body {
                 }
             }
         });
+
         loadSchedules();
         setInterval(loadSchedules, 300000);
         setInterval(updateCurrentTime, 60000);
