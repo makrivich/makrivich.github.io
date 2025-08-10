@@ -1,333 +1,150 @@
-<script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-        </script><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Расписание</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Расписание</title>
 
-    <!-- Современный шрифт -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+    --bg-light: #f2c48d;
+    --bg-dark: #1e1712;
+    --text-light: #3b2f28;
+    --text-dark: #efe9e3;
+    --muted-light: #7a5b48;
+    --muted-dark: #cbb7a4;
+    --accent: #c35a1a;
+    --accent-dark: #f0c08b;
+}
 
-    <style>
-        /* ========== Переменные палитры (осень) ========== */
-        :root{
-            --bg-1: #FFF8EF;
-            --bg-2: #FFF0E0;
-            --text: #3b2f28;
-            --muted: #7a5b48;
-            --accent: #c35a1a;        /* насыщенный оранжево-коричневый */
-            --accent-dark: #7a3a1a;
-            --card: #fffaf6;
-            --glass: rgba(255,255,255,0.55);
-            --shadow: rgba(71,40,15,0.12);
-            --soft-shadow: rgba(71,40,15,0.06);
-        }
+body {
+    margin: 0;
+    padding: 20px;
+    padding-top: 80px;
+    font-family: "Segoe UI", sans-serif;
+    background: var(--bg-light);
+    color: var(--text-light);
+    transition: background 0.3s, color 0.3s;
+}
 
-        /* ========== Базовые стили ========== */
-        *{box-sizing: border-box}
-        html,body{height:100%}
-        body {
-            font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            padding-top: 80px;
-            color: var(--text);
-            background: linear-gradient(135deg, var(--bg-1) 0%, var(--bg-2) 100%);
-            -webkit-font-smoothing:antialiased;
-            -moz-osx-font-smoothing:grayscale;
-            transition: background 300ms ease, color 300ms ease;
-        }
+/* Хедер */
+.header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: 10px 15px;
+    background: rgba(255,255,255,0.7);
+    backdrop-filter: blur(8px);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+    z-index: 1000;
+}
 
-        /* ========== Хедер (полупрозрачное стекло) ========== */
-        .header {
-            position: fixed;
-            top: 12px;
-            left: 12px;
-            right: 12px;
-            height: 56px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            padding: 8px 14px;
-            border-radius: 12px;
-            background: linear-gradient(180deg, rgba(255,255,255,0.85), rgba(255,250,245,0.7));
-            box-shadow: 0 10px 30px var(--shadow), 0 2px 6px var(--soft-shadow);
-            backdrop-filter: blur(8px);
-            z-index: 1000;
-            border: 1px solid rgba(122,91,72,0.06);
-        }
-        .header .info {
-            font-size: 13px;
-            color: var(--muted);
-            margin: 0;
-            padding-right: 8px;
-        }
-        .header .current-lesson-info {
-            font-weight: 600;
-            color: var(--accent-dark);
-            font-size: 14px;
-            margin: 0;
-        }
+.header .info { font-size: 14px; color: var(--muted-light); }
+.current-lesson-info { font-weight: bold; color: var(--accent); }
 
-        /* кнопка настроек */
-        .theme-button {
-            background: transparent;
-            border: 0;
-            padding: 8px 10px;
-            font-size: 16px;
-            border-radius: 8px;
-            cursor: pointer;
-            color: var(--accent-dark);
-            transition: background 160ms ease, transform 120ms ease;
-        }
-        .theme-button:hover { background: rgba(195,90,26,0.08); transform: translateY(-2px); }
+/* Карточки */
+.lesson-card {
+    padding: 15px;
+    margin-bottom: 12px;
+    border-radius: 12px;
+    font-size: 15px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.lesson-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 14px rgba(0,0,0,0.15);
+}
+.current-lesson {
+    border: 2px solid var(--accent);
+}
 
-        /* ========== Заголовки ========== */
-        h1{
-            text-align: center;
-            margin: 6px 0 6px;
-            color: var(--accent-dark);
-            font-weight: 600;
-            letter-spacing: -0.02em;
-        }
-        h3{
-            text-align: center;
-            margin-top: 18px;
-            margin-bottom: 6px;
-            color: var(--muted);
-            font-weight: 500;
-        }
+/* Цвета предметов — светлая тема */
+.red-pastel { background-color: #f4a698; }
+.blue-pastel { background-color: #f7c27b; }
+.yellow-pastel { background-color: #f9e79f; }
+.orange-pastel { background-color: #f5b97f; }
+.green-pastel { background-color: #d2b48c; }
+.purple-pastel { background-color: #d8a9d1; }
+.default-pastel { background-color: #f5f5dc; }
+.gold { background-color: #ffdf80; }
 
-        /* ========== Контейнер расписания ========== */
-        .schedule-container {
-            max-width: 980px;
-            margin: 18px auto;
-            padding: 8px;
-        }
+/* Цвета предметов — тёмная тема */
+.dark-theme .red-pastel { background-color: #a15f54; }
+.dark-theme .blue-pastel { background-color: #a37a4f; }
+.dark-theme .yellow-pastel { background-color: #a49558; }
+.dark-theme .orange-pastel { background-color: #9c6a3f; }
+.dark-theme .green-pastel { background-color: #827052; }
+.dark-theme .purple-pastel { background-color: #7b5d77; }
+.dark-theme .default-pastel { background-color: #3e3a35; }
+.dark-theme .gold { background-color: #a6853a; }
 
-        /* ========== Карточки уроков (современные) ========== */
-        .lesson-card {
-            padding: 14px 16px;
-            margin-bottom: 12px;
-            border-radius: 12px;
-            color: #2f241f;
-            font-size: 15px;
-            line-height: 1.4;
-            box-shadow: 0 10px 20px rgba(37,25,18,0.04);
-            transition: transform 180ms ease, box-shadow 180ms ease, border-left-color 180ms ease;
-            display: block;
-            background: linear-gradient(180deg, rgba(255,255,255,0.8), rgba(255,250,246,0.9));
-            border-left: 6px solid rgba(0,0,0,0.06);
-        }
-        .lesson-card:hover {
-            transform: translateY(-6px);
-            box-shadow: 0 18px 40px rgba(37,25,18,0.08);
-        }
+/* Тёмная тема */
+.dark-theme {
+    background: var(--bg-dark);
+    color: var(--text-dark);
+}
+.dark-theme .header {
+    background: rgba(30, 23, 18, 0.8);
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.dark-theme .info { color: var(--muted-dark); }
+.dark-theme .current-lesson-info { color: var(--accent-dark); }
 
-        .lesson-card .lesson-title { font-weight:600; color:var(--accent-dark); display:block; margin-bottom:6px; }
-        .lesson-card .lesson-sub { color:var(--muted); font-size:14px; display:block; }
+/* Кнопки */
+.menu-button, .countdown-button, .task-manager-button {
+    padding: 10px 14px;
+    font-size: 14px;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    margin: 4px;
+}
+.menu-button { background: #d07a2a; }
+.countdown-button { background: #b85a14; }
+.task-manager-button { background: #8c3a10; }
+.menu-button:hover, .countdown-button:hover, .task-manager-button:hover {
+    opacity: 0.85;
+}
 
-        .current-lesson {
-            outline: 1px solid rgba(163,82,39,0.12);
-            box-shadow: 0 18px 40px rgba(195,90,26,0.08);
-        }
-
-        .no-lesson { color: #9a7a61; font-style: italic; }
-
-        /* ========== Осенняя палитра для существующих классов ========== */
-        .red-pastel {
-            background: linear-gradient(90deg,#fff2f0,#fff0ea);
-            border-left-color: #9b2f2a;
-            color:#3a241f;
-        }
-        .blue-pastel {
-            /* используем тёплый янтарный для "математики/физики" */
-            background: linear-gradient(90deg,#fff7f0,#fff2e6);
-            border-left-color: #c26a12;
-            color:#3a241f;
-        }
-        .yellow-pastel {
-            background: linear-gradient(90deg,#fff8ec,#fff4de);
-            border-left-color: #d18d1e;
-            color:#3a241f;
-        }
-        .orange-pastel {
-            background: linear-gradient(90deg,#fff4ee,#fff0e8);
-            border-left-color: #b75a13;
-            color:#3a241f;
-        }
-        .green-pastel {
-            background: linear-gradient(90deg,#f8f7f3,#f6efe7);
-            border-left-color: #7b6a2f;
-            color:#3a241f;
-        }
-        .purple-pastel {
-            background: linear-gradient(90deg,#fff0f2,#ffecf0);
-            border-left-color: #7a2f3a;
-            color:#3a241f;
-        }
-        .default-pastel {
-            background: linear-gradient(90deg,#ffffff,#fffaf7);
-            border-left-color: rgba(0,0,0,0.06);
-            color:#3a241f;
-        }
-        .gold {
-            background: linear-gradient(90deg,#fff7e6,#fff1d6);
-            border-left-color: #b07a2b;
-            color:#3a241f;
-        }
-
-        /* ========== Секция с кнопками/счетчиком ========== */
-        .countdown-container {
-            max-width: 980px;
-            margin: 6px auto 36px;
-            text-align: center;
-            display:flex;
-            flex-wrap:wrap;
-            gap:10px;
-            align-items:center;
-            justify-content:center;
-        }
-        .menu-button, .countdown-button, .task-manager-button {
-            padding: 10px 14px;
-            font-size: 14px;
-            color: white;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            margin: 2px;
-            box-shadow: 0 8px 18px rgba(71,40,15,0.06);
-            transition: transform 160ms ease, box-shadow 160ms ease;
-        }
-        .menu-button { background: linear-gradient(90deg,#d07a2a,#b85a14); }
-        .menu-button:hover { transform: translateY(-3px); box-shadow: 0 18px 36px rgba(71,40,15,0.1); }
-        .countdown-button { background: linear-gradient(90deg,#b85a14,#8c3a10); }
-        .countdown-button:hover { transform: translateY(-3px); box-shadow: 0 18px 36px rgba(71,40,15,0.1); }
-        .task-manager-button { background: linear-gradient(90deg,#8c3a10,#6b2a09); }
-        .task-manager-button:hover { transform: translateY(-3px); box-shadow: 0 18px 36px rgba(71,40,15,0.1); }
-
-        .countdown-result {
-            width:100%;
-            margin-top: 8px;
-            font-size: 15px;
-            color: var(--muted);
-        }
-
-        .footer {
-            text-align: center;
-            margin-top: 12px;
-            color: var(--muted);
-            font-size: 13px;
-        }
-
-        /* ========== Адаптив ========== */
-        @media (max-width: 720px){
-            .header { left: 8px; right: 8px; top: 8px; padding:8px; height:62px; }
-            .schedule-container { padding: 6px; margin: 12px 12px; }
-            .lesson-card { padding: 12px; }
-            .countdown-container { padding: 8px; gap:8px; }
-        }
-
-        /* ========== Темная тема (минимальная) ========== */
-        .dark-theme {
-            --bg-1: #1f1a17;
-            --bg-2: #1b1714;
-            --text: #efe9e3;
-            --muted: #cbb7a4;
-            --accent: #d68a3a;
-            --accent-dark: #f0c08b;
-            --card: #24201d;
-            --glass: rgba(30,26,23,0.5);
-            --shadow: rgba(0,0,0,0.6);
-            background: linear-gradient(180deg,#1b1714 0%, #241c16 100%);
-        }
-        .dark-theme .header {
-            background: linear-gradient(180deg, rgba(30,26,23,0.6), rgba(30,26,23,0.5));
-            border: 1px solid rgba(255,255,255,0.03);
-            box-shadow: 0 8px 24px rgba(0,0,0,0.6);
-        }
-        .dark-theme .lesson-card {
-            background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-            color: var(--text);
-            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-            border-left-color: rgba(255,255,255,0.03);
-        }
-
-    </style>
+/* Прочее */
+.footer {
+    text-align: center;
+    margin-top: 20px;
+    font-size: 14px;
+    color: var(--muted-light);
+}
+.dark-theme .footer { color: var(--muted-dark); }
+</style>
 </head>
 <body>
     <div class="header">
-        <div style="display:flex;gap:12px;align-items:center;">
-            <div id="current-time" class="info"></div>
-            <div id="current-lesson" class="current-lesson-info">Нет текущего урока</div>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center;">
-            <button class="theme-button" onclick="toggleTheme()" id="theme-button" aria-label="Тема">⚙️</button>
-        </div>
+        <div id="current-time" class="info"></div>
+        <div id="current-lesson" class="current-lesson-info">Нет текущего урока</div>
+        <button class="theme-button" onclick="toggleTheme()" id="theme-button">⚙️</button>
     </div>
 
     <h1>Расписание</h1>
-
     <div id="main-schedule" class="schedule-container"><p class="loading">Подождите, расписание загружается...</p></div>
-
     <h3>Расписание элективов</h3>
     <div id="electives-schedule" class="schedule-container"><p class="loading">Подождите, расписание загружается...</p></div>
 
     <div class="countdown-container">
-        <div id="upcoming-event" class="info" style="min-width:240px;"></div>
+        <div id="upcoming-event" class="info"></div>
         <button class="menu-button" onclick="openMenu()">Открыть меню столовой</button>
         <button class="countdown-button" onclick="showCountdown()">Узнать, сколько дней до последнего звонка</button>
         <button class="task-manager-button" onclick="openTaskManager()">Task Manager</button>
         <div id="countdown-result" class="countdown-result"></div>
-
-        <div class="footer" style="width:100%">
-            by Makrivich 2025<br>ver. r2.1.2
-        </div>
+        <div class="footer">by Makrivich 2025<br>ver. r2.2</div>
     </div>
 
-    <!-- ====== Сохранён оригинальный JavaScript (логика страницы) ====== -->
-    <script>
-        // URL для основного расписания и расписания элективов
+<script>
+// URL для основного расписания и расписания элективов
         const MAIN_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1lWqIJaWWXceiE_CWyIdzMRLcRoQa-ulnT5tJfgLDo0o/export?format=csv&gid=0';
         const ELECTIVES_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1qS4JSUM2DqFgZhmiMfaJ8VU-t2DvpRtJyadEQkdxujA/export?format=csv';
 
@@ -781,6 +598,6 @@
         loadSchedules();
         setInterval(loadSchedules, 300000);
         setInterval(updateCurrentTime, 60000);
-    </script>
+</script>
 </body>
 </html>
