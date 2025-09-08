@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Выбор класса</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            padding-top: 80px;
+            background-color: #f5e8c7; /* Теплый бежевый осенний фон */
+            background-image: linear-gradient(to bottom, rgba(255, 245, 230, 0.5), #f5e8c7); /* Легкий осенний градиент */
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        h1 {
+            text-align: center;
+            color: #8b4513; /* Коричневый цвет заголовков, как опавшие листья */
+            transition: color 0.3s;
+            font-family: 'Georgia', serif;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            text-align: center;
+            padding: 20px;
+            background-color: #efebe9;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .class-button {
+            padding: 15px 30px;
+            font-size: 18px;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+            transition: background-color 0.3s;
+            background-color: #d84315; /* Темно-оранжевый, как спелая тыква */
+        }
+
+        .class-button:hover {
+            background-color: #bf360c;
+        }
+
+        /* Фиксированный хедер */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background-color: #f5e8c7;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            padding: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            z-index: 1000;
+            transition: background-color 0.3s;
+        }
+
+        .theme-button {
+            padding: 10px 20px;
+            font-size: 16px;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background-color: #6d4c41; /* Коричневый, как кофейные зерна */
+            transition: background-color 0.3s;
+        }
+
+        .theme-button:hover {
+            background-color: #5d4037;
+        }
+
+        /* Футер */
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #5d4037; /* Темно-коричневый */
+            font-size: 14px;
+        }
+
+        .dark-theme {
+            background-color: #3e2723; /* Темно-коричневый фон */
+            background-image: none;
+            color: #efebe9;
+        }
+
+        .dark-theme .header {
+            background-color: #3e2723;
+        }
+
+        .dark-theme h1 {
+            color: #efebe9;
+        }
+
+        .dark-theme .container {
+            background-color: #4e342e;
+            color: #efebe9;
+        }
+
+        .dark-theme .footer {
+            color: #a1887f;
+        }
+
+        .light-theme {
+            background-color: #f5e8c7;
+            background-image: linear-gradient(to bottom, rgba(255, 245, 230, 0.5), #f5e8c7);
+            color: #333;
+        }
+
+        .light-theme .header {
+            background-color: #f5e8c7;
+        }
+
+        .light-theme h1 {
+            color: #8b4513;
+        }
+
+        .light-theme .container {
+            background-color: #efebe9;
+        }
+
+        .light-theme .footer {
+            color: #5d4037;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            body:not(.light-theme):not(.dark-theme) {
+                background-color: #3e2723;
+                background-image: none;
+                color: #efebe9;
+            }
+
+            body:not(.light-theme):not(.dark-theme) .header {
+                background-color: #3e2723;
+            }
+
+            body:not(.light-theme):not(.dark-theme) h1 {
+                color: #efebe9;
+            }
+
+            body:not(.light-theme):not(.dark-theme) .container {
+                background-color: #4e342e;
+                color: #efebe9;
+            }
+
+            body:not(.light-theme):not(.dark-theme) .footer {
+                color: #a1887f;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div id="current-time" class="info"></div>
+        <button class="theme-button" onclick="toggleTheme()" id="theme-button">⚙️</button>
+    </div>
+    <h1>Выбор класса</h1>
+    <div class="container">
+        <button class="class-button" onclick="redirectToSchedule('10a')">10А</button>
+        <button class="class-button" onclick="redirectToSchedule('10b')">10Б</button>
+    </div>
+    <div class="footer">
+        by Makrivich 2025<br>ver. r2.1.1
+    </div>
+
+    <script>
+        // Отображение текущей даты и времени
+        function updateCurrentTime() {
+            const now = new Date();
+            const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
+            const utcPlus5Time = new Date(utcTime + (5 * 60 * 60 * 1000));
+            const hours = String(utcPlus5Time.getHours()).padStart(2, '0');
+            const minutes = String(utcPlus5Time.getMinutes()).padStart(2, '0');
+            const day = String(utcPlus5Time.getDate()).padStart(2, '0');
+            const month = String(utcPlus5Time.getMonth() + 1).padStart(2, '0');
+            const year = utcPlus5Time.getFullYear();
+            document.getElementById('current-time').innerHTML = `Сегодня: ${day}.${month}.${year}, ${hours}:${minutes} UTC+5`;
+        }
+
+        // Переключение темы
+        function toggleTheme() {
+            const themeButton = document.getElementById('theme-button');
+            const currentTheme = localStorage.getItem('theme') || 'system';
+
+            if (currentTheme === 'dark') {
+                document.body.classList.remove('dark-theme');
+                document.body.classList.remove('light-theme');
+                localStorage.setItem('theme', 'system');
+                applySystemTheme();
+                themeButton.innerHTML = '⚙️';
+            } else if (currentTheme === 'system') {
+                document.body.classList.remove('dark-theme');
+                document.body.classList.add('light-theme');
+                localStorage.setItem('theme', 'light');
+                themeButton.innerHTML = '☀️';
+            } else {
+                document.body.classList.remove('light-theme');
+                document.body.classList.add('dark-theme');
+                localStorage.setItem('theme', 'dark');
+                themeButton.innerHTML = '🌙';
+            }
+        }
+
+        // Применение системной темы
+        function applySystemTheme() {
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                document.body.classList.add('dark-theme');
+            } else {
+                document.body.classList.add('light-theme');
+            }
+        }
+
+        // Переадресация на страницу расписания по ссылке
+        function redirectToSchedule(classId) {
+            const schedules = {
+                '10a': 'https://makrivich.github.io/dnevnik/10a',
+                '10b': 'https://makrivich.github.io/dnevnik/10b'
+            };
+            const targetUrl = schedules[classId];
+            if (targetUrl) {
+                window.location.href = targetUrl;
+            } else {
+                alert('Расписание для этого класса не найдено.');
+            }
+        }
+
+        // Инициализация темы
+        const savedTheme = localStorage.getItem('theme') || 'system';
+        const themeButton = document.getElementById('theme-button');
+        if (savedTheme === 'dark') {
+            document.body.classList.add('dark-theme');
+            themeButton.innerHTML = '🌙';
+        } else if (savedTheme === 'light') {
+            document.body.classList.add('light-theme');
+            themeButton.innerHTML = '☀️';
+        } else {
+            applySystemTheme();
+            themeButton.innerHTML = '⚙️';
+            localStorage.setItem('theme', 'system');
+        }
+
+        // Слушаем изменения системной темы
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'system') {
+                if (e.matches) {
+                    document.body.classList.remove('light-theme');
+                    document.body.classList.add('dark-theme');
+                } else {
+                    document.body.classList.remove('dark-theme');
+                    document.body.classList.add('light-theme');
+                }
+            }
+        });
+
+        // Обновление времени
+        updateCurrentTime();
+        setInterval(updateCurrentTime, 60000);
+    </script>
+</body>
+</html>
