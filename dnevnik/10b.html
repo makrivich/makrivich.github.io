@@ -346,7 +346,7 @@
         };
 
         // Определение цвета карточки в зависимости от предмета
-        function getSubjectColor(subject) {
+                function getSubjectColor(subject) {
             if (!subject || subject === 'Нет урока') return 'default-pastel';
 
             const subjectLower = subject.toLowerCase();
@@ -358,12 +358,14 @@
                 subjectLower.includes('вис') ||
                 subjectLower.includes('информатика') ||
                 subjectLower.includes('физика') ||
-                subjectLower.includes('огэ по математике')
+                subjectLower.includes('электив по информатике')
             ) {
                 return 'blue-pastel';
             } else if (
                 subjectLower.includes('литература') ||
-                subjectLower.includes('проектная деятельность')
+                subjectLower.includes('проектная деятельность') ||
+                subjectLower.includes('электив по русскому') ||
+                subjectLower.includes('электив по литературе')
             ) {
                 return 'yellow-pastel';
             } else if (
@@ -371,7 +373,8 @@
                 subjectLower.includes('обществознание') ||
                 subjectLower.includes('разговоры о важном') ||
                 subjectLower.includes('классный час') ||
-                subjectLower.includes('профориентация')
+                subjectLower.includes('профориентация') ||
+                subjectLower.includes('электив по обществознанию')
             ) {
                 return 'orange-pastel';
             } else if (
