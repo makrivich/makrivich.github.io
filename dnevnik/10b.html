@@ -305,8 +305,6 @@
     </div>
     <h1>Расписание</h1>
     <div id="main-schedule" class="schedule-container"><p class="loading">Подождите, расписание загружается...</p></div>
-    <h3>Домашнее задание</h3>
-    <div id="homework-schedule" class="schedule-container"><p class="loading">Подождите, домашнее задание загружается...</p></div>
     <div class="countdown-container">
         <div id="upcoming-event" class="info"></div>
         <button class="menu-button" onclick="openMenu()">Открыть меню столовой</button>
@@ -353,7 +351,7 @@
             if (!subject || subject === 'Нет урока' || subject === 'Нет ДЗ') return 'default-pastel';
 
             const subjectLower = subject.toLowerCase();
-            if (subjectLower.includes('русский') || subjectLower.includes('английский')) {
+             if (subjectLower.includes('русский') || subjectLower.includes('английский')) {
                 return 'red-pastel';
             } else if (
                 subjectLower.includes('алгебра') ||
@@ -391,8 +389,6 @@
                 subjectLower.includes('обзр')
             ) {
                 return 'purple-pastel';
-            }
-            return 'default-pastel';
         }
 
         async function fetchSchedule(url) {
@@ -472,19 +468,23 @@
             };
         }
 
-        function displaySchedule(data, containerId, title) {
+        function displaySchedule(mainData, homeworkData, containerId) {
             const { displayDayIndex, isSunday, date } = getDayWithTimeShift();
             const days = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
             const currentDay = days[displayDayIndex];
             
-            console.log(`Отображаемый день для ${title}:`, currentDay);
+            console.log('Отображаемый день:', currentDay);
 
-            const headerRow = data[0] || [];
-            console.log(`Заголовки таблицы (${title}):`, headerRow);
-            const dayIndex = headerRow.indexOf(currentDay);
+            const mainHeaderRow = mainData[0] || [];
+            console.log('Заголовки таблицы расписания:', mainHeaderRow);
+            const mainDayIndex = mainHeaderRow.indexOf(currentDay);
 
-            if (dayIndex === -1) {
-                console.log(`Дни в таблице (${title}):`, headerRow);
+            const homeworkHeaderRow = homeworkData[0] || [];
+            console.log('Заголовки таблицы ДЗ:', homeworkHeaderRow);
+            const homeworkDayIndex = homeworkHeaderRow.indexOf(currentDay);
+
+            if (mainDayIndex === -1 || homeworkDayIndex === -1) {
+                console.log('Дни в таблице:', mainHeaderRow, homeworkHeaderRow);
                 document.getElementById(containerId).innerHTML = `<p class="error">Данные для текущего дня (${currentDay}) не найдены</p>`;
                 return;
             }
@@ -500,16 +500,17 @@
             let currentLessonInfo = 'Нет текущего урока';
             let foundCurrentLesson = false;
 
-            for (let i = 1; i < data.length; i++) {
-                const lessonWithTime = data[i][0] || '';
-                const subject = data[i][dayIndex] || (title === 'Домашнее задание' ? 'Нет ДЗ' : 'Нет урока');
+            for (let i = 1; i < mainData.length; i++) {
+                const lessonWithTime = mainData[i][0] || '';
+                const subject = mainData[i][mainDayIndex] || 'Нет урока';
+                const homework = homeworkData[i][homeworkDayIndex] || 'Нет ДЗ';
 
                 const match = lessonWithTime.match(/(.*)\s*\((.*)\)/);
                 const lesson = match ? match[1].trim() : lessonWithTime;
                 const time = scheduleTimes[lesson] || '-';
 
                 let isCurrentLesson = false;
-                if (!isSunday && time !== '-' && title === 'Расписание') {
+                if (!isSunday && time !== '-') {
                     const [start, end] = time.split('–').map(t => {
                         const [h, m] = t.split(':').map(Number);
                         return h * 60 + m;
@@ -522,20 +523,21 @@
 
                 if (lesson) {
                     const subjectParts = subject.split(' ');
-                    const roomNumber = subject === 'Нет урока' || subject === 'Нет ДЗ' ? '' : subjectParts.pop();
-                    const subjectName = subject === 'Нет урока' || subject === 'Нет ДЗ' ? subject : subjectParts.join(' ');
+                    const roomNumber = subject === 'Нет урока' ? '' : subjectParts.pop();
+                    const subjectName = subject === 'Нет урока' ? 'Нет урока' : subjectParts.join(' ');
 
                     const colorClass = getSubjectColor(subjectName);
                     html += `
                         <div class="lesson-card ${colorClass} ${isCurrentLesson ? 'current-lesson' : ''}" style="--index: ${i - 1}">
                             ${lesson}<br>
                             ${subjectName}<br>
-                            ${title === 'Расписание' ? time : ''}<br>
-                            ${subject === 'Нет урока' || subject === 'Нет ДЗ' ? '' : roomNumber + ' кабинет'}
+                            ${time}<br>
+                            ${subject === 'Нет урока' ? '' : roomNumber + ' кабинет'}<br>
+                            ДЗ: ${homework}
                         </div>
                     `;
 
-                    if (isCurrentLesson && containerId === 'main-schedule' && title === 'Расписание') {
+                    if (isCurrentLesson && containerId === 'main-schedule') {
                         currentLessonInfo = `${subjectName} (${time})`;
                     }
                 }
@@ -543,7 +545,7 @@
 
             document.getElementById(containerId).innerHTML = html;
 
-            if (containerId === 'main-schedule' && title === 'Расписание') {
+            if (containerId === 'main-schedule') {
                 const currentLessonElement = document.getElementById('current-lesson');
                 currentLessonElement.innerHTML = currentLessonInfo;
             }
@@ -723,16 +725,10 @@
 
             const [mainData, homeworkData] = await Promise.all([mainDataPromise, homeworkDataPromise]);
 
-            if (mainData) {
-                displaySchedule(mainData, 'main-schedule', 'Расписание');
+            if (mainData && homeworkData) {
+                displaySchedule(mainData, homeworkData, 'main-schedule');
             } else {
-                document.getElementById('main-schedule').innerHTML = `<p class="error">Не удалось загрузить расписание</p>`;
-            }
-
-            if (homeworkData) {
-                displaySchedule(homeworkData, 'homework-schedule', 'Домашнее задание');
-            } else {
-                document.getElementById('homework-schedule').innerHTML = `<p class="error">Не удалось загрузить домашнее задание</p>`;
+                document.getElementById('main-schedule').innerHTML = `<p class="error">Не удалось загрузить расписание или домашнее задание</p>`;
             }
 
             showUpcomingEvent();
