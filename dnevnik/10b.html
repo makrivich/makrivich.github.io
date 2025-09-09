@@ -305,20 +305,23 @@
     </div>
     <h1>Расписание</h1>
     <div id="main-schedule" class="schedule-container"><p class="loading">Подождите, расписание загружается...</p></div>
+    <h3>Домашнее задание</h3>
+    <div id="homework-schedule" class="schedule-container"><p class="loading">Подождите, домашнее задание загружается...</p></div>
     <div class="countdown-container">
         <div id="upcoming-event" class="info"></div>
         <button class="menu-button" onclick="openMenu()">Открыть меню столовой</button>
-        <button class="countdown-button" onclick="showCountdown()">Узнать, сколько дней до... (не работает)</button>
+        <button class="countdown-button" onclick="showCountdown()">Узнать, сколько дней до последнего звонка</button>
         <button class="task-manager-button" onclick="openTaskManager()">Task Manager</button>
         <div id="countdown-result" class="countdown-result"></div>
         <div class="footer">
-            by Makrivich 2025<br>ver. r2.2.1
+            by Makrivich 2025<br>ver. r2.1.1
         </div>
     </div>
 
     <script>
-        // URL для основного расписания
+        // URL для основного расписания и домашнего задания
         const MAIN_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1lWqIJaWWXceiE_CWyIdzMRLcRoQa-ulnT5tJfgLDo0o/export?format=csv&gid=0';
+        const HOMEWORK_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1tplNsKa2bNaFM2vTNAbVFnAErrf1dE90PP7BqJPfSSg/export?format=csv&gid=0';
 
         // Расписание звонков
         const SCHEDULE_WEEKDAYS = {
@@ -346,8 +349,8 @@
         };
 
         // Определение цвета карточки в зависимости от предмета
-                function getSubjectColor(subject) {
-            if (!subject || subject === 'Нет урока') return 'default-pastel';
+        function getSubjectColor(subject) {
+            if (!subject || subject === 'Нет урока' || subject === 'Нет ДЗ') return 'default-pastel';
 
             const subjectLower = subject.toLowerCase();
             if (subjectLower.includes('русский') || subjectLower.includes('английский')) {
@@ -499,14 +502,14 @@
 
             for (let i = 1; i < data.length; i++) {
                 const lessonWithTime = data[i][0] || '';
-                const subject = data[i][dayIndex] || 'Нет урока';
+                const subject = data[i][dayIndex] || (title === 'Домашнее задание' ? 'Нет ДЗ' : 'Нет урока');
 
                 const match = lessonWithTime.match(/(.*)\s*\((.*)\)/);
                 const lesson = match ? match[1].trim() : lessonWithTime;
                 const time = scheduleTimes[lesson] || '-';
 
                 let isCurrentLesson = false;
-                if (!isSunday && time !== '-') {
+                if (!isSunday && time !== '-' && title === 'Расписание') {
                     const [start, end] = time.split('–').map(t => {
                         const [h, m] = t.split(':').map(Number);
                         return h * 60 + m;
@@ -519,20 +522,20 @@
 
                 if (lesson) {
                     const subjectParts = subject.split(' ');
-                    const roomNumber = subject === 'Нет урока' ? '' : subjectParts.pop();
-                    const subjectName = subject === 'Нет урока' ? 'Нет урока' : subjectParts.join(' ');
+                    const roomNumber = subject === 'Нет урока' || subject === 'Нет ДЗ' ? '' : subjectParts.pop();
+                    const subjectName = subject === 'Нет урока' || subject === 'Нет ДЗ' ? subject : subjectParts.join(' ');
 
                     const colorClass = getSubjectColor(subjectName);
                     html += `
                         <div class="lesson-card ${colorClass} ${isCurrentLesson ? 'current-lesson' : ''}" style="--index: ${i - 1}">
                             ${lesson}<br>
                             ${subjectName}<br>
-                            ${time}<br>
-                            ${subject === 'Нет урока' ? '' : roomNumber + ' кабинет'}
+                            ${title === 'Расписание' ? time : ''}<br>
+                            ${subject === 'Нет урока' || subject === 'Нет ДЗ' ? '' : roomNumber + ' кабинет'}
                         </div>
                     `;
 
-                    if (isCurrentLesson && containerId === 'main-schedule') {
+                    if (isCurrentLesson && containerId === 'main-schedule' && title === 'Расписание') {
                         currentLessonInfo = `${subjectName} (${time})`;
                     }
                 }
@@ -540,7 +543,7 @@
 
             document.getElementById(containerId).innerHTML = html;
 
-            if (containerId === 'main-schedule') {
+            if (containerId === 'main-schedule' && title === 'Расписание') {
                 const currentLessonElement = document.getElementById('current-lesson');
                 currentLessonElement.innerHTML = currentLessonInfo;
             }
@@ -628,7 +631,7 @@
             } else if (daysDifference === 0) {
                 countdownElement.innerHTML = `Сегодня последний звонок!`;
             } else {
-                countdownElement.innerHTML = `Функция не работает`;
+                countdownElement.innerHTML = `Последний звонок уже прошел!`;
             }
         }
 
@@ -716,12 +719,20 @@
 
         async function loadSchedules() {
             const mainDataPromise = fetchSchedule(MAIN_SHEET_URL);
+            const homeworkDataPromise = fetchSchedule(HOMEWORK_SHEET_URL);
 
-            const mainData = await mainDataPromise;
+            const [mainData, homeworkData] = await Promise.all([mainDataPromise, homeworkDataPromise]);
+
             if (mainData) {
-                displaySchedule(mainData, 'main-schedule', 'Обычное расписание');
+                displaySchedule(mainData, 'main-schedule', 'Расписание');
             } else {
-                document.getElementById('main-schedule').innerHTML = `<p class="error">Не удалось загрузить обычное расписание</p>`;
+                document.getElementById('main-schedule').innerHTML = `<p class="error">Не удалось загрузить расписание</p>`;
+            }
+
+            if (homeworkData) {
+                displaySchedule(homeworkData, 'homework-schedule', 'Домашнее задание');
+            } else {
+                document.getElementById('homework-schedule').innerHTML = `<p class="error">Не удалось загрузить домашнее задание</p>`;
             }
 
             showUpcomingEvent();
