@@ -308,7 +308,7 @@
     <div class="countdown-container">
         <div id="upcoming-event" class="info"></div>
         <button class="menu-button" onclick="openMenu()">Открыть меню столовой</button>
-        <button class="countdown-button" onclick="showCountdown()">Узнать, сколько дней до последнего звонка</button>
+        <button class="countdown-button" onclick="showCountdown()">Узнать, сколько дней до... (функция отключена)</button>
         <button class="task-manager-button" onclick="openTaskManager()">Task Manager</button>
         <div id="countdown-result" class="countdown-result"></div>
         <div class="footer">
@@ -634,7 +634,7 @@
             } else if (daysDifference === 0) {
                 countdownElement.innerHTML = `Сегодня последний звонок!`;
             } else {
-                countdownElement.innerHTML = `Последний звонок уже прошел!`;
+                countdownElement.innerHTML = `Error 404`;
             }
         }
 
