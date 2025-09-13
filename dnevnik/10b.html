@@ -308,11 +308,11 @@
     <div class="countdown-container">
         <div id="upcoming-event" class="info"></div>
         <button class="menu-button" onclick="openMenu()">Открыть меню столовой</button>
-        <button class="countdown-button" onclick="showCountdown()">Узнать, сколько дней до... (функция отключена)</button>
+        <div class="countdown-button" style="background-color: #d84315; padding: 10px 20px; border-radius: 5px; color: white;">Функция временно недоступна</div>
         <button class="task-manager-button" onclick="openTaskManager()">Task Manager</button>
         <div id="countdown-result" class="countdown-result"></div>
         <div class="footer">
-            by Makrivich 2025<br>ver. r2.1.1
+            by Makrivich 2025<br>ver. r2.2.5
         </div>
     </div>
 
@@ -448,23 +448,23 @@
             const minutes = utcPlus5Time.getMinutes();
             console.log('Текущее время в UTC+5:', `${hours}:${minutes}`);
 
-            if (dayIndex === 0) {
-                return {
-                    displayDayIndex: 1,
-                    isSunday: true,
-                    date: utcPlus5Time
-                };
-            }
-
+            // Переключение на следующий день после 16:00
             const isAfter16 = (hours > 16) || (hours === 16 && minutes >= 0);
             if (isAfter16) {
                 dayIndex = (dayIndex + 1) % 7;
                 utcPlus5Time.setDate(utcPlus5Time.getDate() + 1);
+
+                // Специальный случай: если суббота после 16:00, переключаемся на понедельник
+                if (dayIndex === 0) {
+                    dayIndex = 1;
+                    utcPlus5Time.setDate(utcPlus5Time.getDate() + 1);
+                }
             }
 
+            const isSunday = dayIndex === 0;
             return {
-                displayDayIndex: dayIndex,
-                isSunday: false,
+                displayDayIndex: isSunday ? 1 : dayIndex, // Если воскресенье, показываем понедельник
+                isSunday: isSunday,
                 date: utcPlus5Time
             };
         }
@@ -496,6 +496,8 @@
             let html = `<h2>${currentDay}</h2>`;
             if (isSunday) {
                 html += `<p class="info">Сегодня воскресенье, показываем расписание на понедельник.</p>`;
+            } else if (displayDayIndex === 1 && date.getDay() === 6 && isAfter16) {
+                html += `<p class="info">После 16:00 субботы, показываем расписание на понедельник.</p>`;
             }
 
             let currentLessonInfo = 'Нет текущего урока';
@@ -511,7 +513,7 @@
                 const time = scheduleTimes[lesson] || '-';
 
                 let isCurrentLesson = false;
-                if (!isSunday && time !== '-') {
+                if (!isSunday && time !== '-' && displayDayIndex !== 1) {
                     const [start, end] = time.split('–').map(t => {
                         const [h, m] = t.split(':').map(Number);
                         return h * 60 + m;
@@ -583,60 +585,7 @@
             }
         }
 
-        // Функция для отображения счетчика
-        function showCountdown() {
-            const { date } = getDayWithTimeShift();
-            const currentDate = new Date(date);
-
-            const lastBellDate = new Date('2025-05-20T00:00:00');
-            const utcTimeLastBell = lastBellDate.getTime() + (lastBellDate.getTimezoneOffset() * 60000);
-            const lastBellDateUTC5 = new Date(utcTimeLastBell + (5 * 60 * 60 * 1000));
-
-            currentDate.setHours(0, 0, 0, 0);
-            lastBellDateUTC5.setHours(0, 0, 0, 0);
-
-            const timeDifference = lastBellDateUTC5 - currentDate;
-            const totalDays = Math.ceil(timeDifference / (1000 * 60 * 60 * 24));
-
-            const holidays = [
-                new Date('2025-05-01T00:00:00'),
-                new Date('2025-05-02T00:00:00'),
-                new Date('2025-05-03T00:00:00'),
-                new Date('2025-05-08T00:00:00'),
-                new Date('2025-05-09T00:00:00'),
-                new Date('2025-05-10T00:00:00')
-            ].map(date => {
-                const utcTime = date.getTime() + (date.getTimezoneOffset() * 60000);
-                const dateUTC5 = new Date(utcTime + (5 * 60 * 60 * 1000));
-                dateUTC5.setHours(0, 0, 0, 0);
-                return dateUTC5.getTime();
-            });
-
-            let schoolDays = 0;
-            const tempDate = new Date(currentDate);
-            while (tempDate <= lastBellDateUTC5) {
-                const tempDateTime = tempDate.getTime();
-                const isHoliday = holidays.includes(tempDateTime);
-                const isSunday = tempDate.getDay() === 0;
-
-                if (!isHoliday && !isSunday) {
-                    schoolDays++;
-                }
-
-                tempDate.setDate(tempDate.getDate() + 1);
-            }
-
-            const daysDifference = totalDays;
-
-            const countdownElement = document.getElementById('countdown-result');
-            if (daysDifference > 0) {
-                countdownElement.innerHTML = `До последнего звонка осталось ${totalDays} дней, из них ${schoolDays} учебных дней!`;
-            } else if (daysDifference === 0) {
-                countdownElement.innerHTML = `Сегодня последний звонок!`;
-            } else {
-                countdownElement.innerHTML = `Error 404`;
-            }
-        }
+        // Функция для отображения счетчика (убрана, так как кнопка заменена заглушкой)
 
         // Уведомления о ближайших событиях
         const events = [
