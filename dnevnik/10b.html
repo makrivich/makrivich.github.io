@@ -53,6 +53,11 @@
             background-color: rgba(216, 27, 96, 0.1);
         }
 
+        .upcoming-lesson {
+            border: 2px dashed #ffca28; /* Желтый пунктир для урока через 10 минут */
+            background-color: rgba(255, 202, 40, 0.1);
+        }
+
         .no-lesson {
             color: #888;
             font-style: italic;
@@ -105,6 +110,12 @@
             font-weight: bold;
         }
 
+        .upcoming-lesson-info {
+            color: #ffca28; /* Желтый для урока через 10 минут */
+            font-weight: bold;
+            font-style: italic;
+        }
+
         /* Осенние пастельные цвета для предметов */
         .red-pastel { background-color: #ef9a9a; } /* Ярко-красный, как листья клена */
         .blue-pastel { background-color: #90caf9; } /* Бледно-голубой, как осеннее небо */
@@ -121,7 +132,7 @@
             text-align: center;
         }
 
-        .countdown-button, .menu-button, .theme-button, .task-manager-button {
+        .menu-button, .theme-button, .files-button {
             padding: 10px 20px;
             font-size: 16px;
             color: white;
@@ -140,27 +151,12 @@
             background-color: #f57c00;
         }
 
-        .countdown-button {
-            background-color: #d84315; /* Темно-оранжевый, как спелая тыква */
-        }
-
-        .countdown-button:hover {
-            background-color: #bf360c;
-        }
-
-        .task-manager-button {
+        .files-button {
             background-color: #ffca28; /* Ярко-желтый, как осенние листья */
         }
 
-        .task-manager-button:hover {
+        .files-button:hover {
             background-color: #ffb300;
-        }
-
-        .countdown-result {
-            margin-top: 10px;
-            font-size: 18px;
-            color: #8b4513;
-            transition: color 0.3s;
         }
 
         .theme-button {
@@ -169,6 +165,13 @@
 
         .theme-button:hover {
             background-color: #5d4037;
+        }
+
+        .countdown-result {
+            margin-top: 10px;
+            font-size: 18px;
+            color: #8b4513;
+            transition: color 0.3s;
         }
 
         /* Стили для футера */
@@ -204,6 +207,10 @@
 
         .dark-theme .current-lesson-info {
             color: #d81b60;
+        }
+
+        .dark-theme .upcoming-lesson-info {
+            color: #ffca28;
         }
 
         .dark-theme .error {
@@ -242,6 +249,10 @@
             color: #d81b60;
         }
 
+        .light-theme .upcoming-lesson-info {
+            color: #ffca28;
+        }
+
         .light-theme .error {
             color: #b71c1c;
         }
@@ -278,6 +289,10 @@
                 color: #d81b60;
             }
 
+            body:not(.light-theme):not(.dark-theme) .upcoming-lesson-info {
+                color: #ffca28;
+            }
+
             body:not(.light-theme):not(.dark-theme) .error {
                 color: #ef5350;
             }
@@ -308,11 +323,10 @@
     <div class="countdown-container">
         <div id="upcoming-event" class="info"></div>
         <button class="menu-button" onclick="openMenu()">Открыть меню столовой</button>
-        <div class="countdown-button" style="background-color: #d84315; padding: 10px 20px; border-radius: 5px; color: white;">Функция временно недоступна</div>
-        <button class="task-manager-button" onclick="openTaskManager()">Task Manager</button>
+        <button class="files-button" onclick="window.open('https://makrivich.github.io/school/exp', '_blank')">Файлы</button>
         <div id="countdown-result" class="countdown-result"></div>
         <div class="footer">
-            by Makrivich 2025<br>ver. r2.2.5
+            by Makrivich 2025<br>ver. r2.3
         </div>
     </div>
 
@@ -501,7 +515,7 @@
             }
 
             let currentLessonInfo = 'Нет текущего урока';
-            let foundCurrentLesson = false;
+            let upcomingLessonInfo = '';
 
             for (let i = 1; i < mainData.length; i++) {
                 const lessonWithTime = mainData[i][0] || '';
@@ -513,6 +527,7 @@
                 const time = scheduleTimes[lesson] || '-';
 
                 let isCurrentLesson = false;
+                let isUpcomingLesson = false;
                 if (!isSunday && time !== '-' && displayDayIndex !== 1) {
                     const [start, end] = time.split('–').map(t => {
                         const [h, m] = t.split(':').map(Number);
@@ -520,7 +535,9 @@
                     });
                     if (currentTime >= start && currentTime <= end) {
                         isCurrentLesson = true;
-                        foundCurrentLesson = true;
+                    } else if (currentTime >= start - 10 && currentTime < start) { // За 10 минут до начала
+                        isUpcomingLesson = true;
+                        upcomingLessonInfo = `${subjectName} (${time}) скоро начнется`;
                     }
                 }
 
@@ -531,7 +548,7 @@
 
                     const colorClass = getSubjectColor(subjectName);
                     html += `
-                        <div class="lesson-card ${colorClass} ${isCurrentLesson ? 'current-lesson' : ''}" style="--index: ${i - 1}">
+                        <div class="lesson-card ${colorClass} ${isCurrentLesson ? 'current-lesson' : ''} ${isUpcomingLesson ? 'upcoming-lesson' : ''}" style="--index: ${i - 1}">
                             ${lesson}<br>
                             ${subjectName}<br>
                             ${time}<br>
@@ -550,7 +567,11 @@
 
             if (containerId === 'main-schedule') {
                 const currentLessonElement = document.getElementById('current-lesson');
-                currentLessonElement.innerHTML = currentLessonInfo;
+                if (upcomingLessonInfo) {
+                    currentLessonElement.innerHTML = `<span class="upcoming-lesson-info">${upcomingLessonInfo}</span>`;
+                } else {
+                    currentLessonElement.innerHTML = currentLessonInfo;
+                }
             }
         }
 
@@ -576,16 +597,6 @@
             const finalUrl = `https://view.officeapps.live.com/op/view.aspx?src=${encodedMenuUrl}&wdOrigin=BROWSELINK`;
             window.open(finalUrl, '_blank');
         }
-
-        // Функция для открытия Task Manager с уведомлением
-        function openTaskManager() {
-            const confirmed = confirm('Это бета-функция и может работать нестабильно. Продолжить?');
-            if (confirmed) {
-                window.open('https://makrivich.github.io/taskmanager/', '_blank');
-            }
-        }
-
-        // Функция для отображения счетчика (убрана, так как кнопка заменена заглушкой)
 
         // Уведомления о ближайших событиях
         const events = [
