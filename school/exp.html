@@ -1,48 +1,9 @@
-<script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-        </script><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>School Repository - Win95 Explorer</title>
+    <title>Dnevnik Files - Win95 Explorer</title>
     <style>
         body {
             margin: 0;
@@ -57,6 +18,17 @@
             background: #c0c0c0;
             border: 1px solid #000;
             box-shadow: inset -1px -1px #fff, inset 1px 1px #0a0a0a, inset -2px -2px #808080, inset 2px 2px #fff;
+            transition: all 0.2s;
+            position: relative;
+        }
+        .window.minimized {
+            height: 24px;
+            overflow: hidden;
+        }
+        .window.maximized {
+            width: calc(100% - 10px);
+            height: calc(100vh - 50px);
+            margin: 5px;
         }
         .title-bar {
             background: linear-gradient(to right, #000080, #1084d0);
@@ -68,6 +40,9 @@
             justify-content: space-between;
             align-items: center;
         }
+        .title-bar.inactive {
+            background: linear-gradient(to right, #808080, #a0a0a0);
+        }
         .title-bar button {
             width: 16px;
             height: 16px;
@@ -78,6 +53,10 @@
             font-size: 10px;
             padding: 0;
             margin: 0 2px;
+            text-align: center;
+        }
+        .title-bar button:active {
+            box-shadow: inset 1px 1px #0a0a0a, inset -1px -1px #fff;
         }
         .menu-bar {
             background: #c0c0c0;
@@ -141,13 +120,13 @@
     </style>
 </head>
 <body>
-    <div class="window">
-        <div class="title-bar">
-            <span>Explorer - makrivich.github.io/school</span>
+    <div class="window" id="window">
+        <div class="title-bar" id="title-bar">
+            <span>Explorer - makrivich.github.io/dnevnik/files</span>
             <div>
-                <button>-</button>
-                <button>□</button>
-                <button>X</button>
+                <button id="minimize">-</button>
+                <button id="maximize">□</button>
+                <button id="close">X</button>
             </div>
         </div>
         <div class="menu-bar">
@@ -165,7 +144,7 @@
 
     <script>
         async function fetchRepoFiles() {
-            const repoUrl = 'https://api.github.com/repos/makrivich/makrivich.github.io/contents/school';
+            const repoUrl = 'https://api.github.com/repos/makrivich/makrivich.github.io/contents/dnevnik/files';
             const fileList = document.getElementById('file-list');
             const loading = document.getElementById('loading');
             const errorDiv = document.getElementById('error');
@@ -197,9 +176,14 @@
                         : 'https://win98icons.alexmeub.com/icons/png/doc-2.png';
                     
                     const link = document.createElement('a');
-                    link.href = file.html_url;
+                    if (file.type === 'file' && file.download_url) {
+                        link.href = file.download_url;
+                        link.download = file.name; // Initiates file download
+                    } else {
+                        link.href = file.html_url; // Fallback for directories
+                        link.target = '_blank';
+                    }
                     link.textContent = file.name;
-                    link.target = '_blank';
                     link.style.color = 'inherit';
                     link.style.textDecoration = 'none';
 
@@ -214,6 +198,39 @@
                 statusBar.textContent = 'Error';
             }
         }
+
+        // Window controls
+        const windowElement = document.getElementById('window');
+        const titleBar = document.getElementById('title-bar');
+        const minimizeBtn = document.getElementById('minimize');
+        const maximizeBtn = document.getElementById('maximize');
+        const closeBtn = document.getElementById('close');
+
+        let isMaximized = false;
+
+        minimizeBtn.addEventListener('click', () => {
+            windowElement.classList.add('minimized');
+            titleBar.classList.add('inactive');
+        });
+
+        maximizeBtn.addEventListener('click', () => {
+            if (isMaximized) {
+                windowElement.classList.remove('maximized');
+                windowElement.style.width = '600px';
+                windowElement.style.height = '';
+                maximizeBtn.textContent = '□';
+            } else {
+                windowElement.classList.remove('minimized');
+                windowElement.classList.add('maximized');
+                maximizeBtn.textContent = '🗗'; // Restore icon
+            }
+            titleBar.classList.remove('inactive');
+            isMaximized = !isMaximized;
+        });
+
+        closeBtn.addEventListener('click', () => {
+            windowElement.style.display = 'none';
+        });
 
         window.onload = fetchRepoFiles;
     </script>
