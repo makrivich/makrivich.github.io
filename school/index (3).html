@@ -1,0 +1,221 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>School Repository - Win95 Explorer</title>
+    <style>
+        body {
+            margin: 0;
+            background: #008080; /* Teal background like Win95 */
+            font-family: 'MS Sans Serif', Geneva, sans-serif;
+            font-size: 12px;
+            color: #000;
+        }
+        .window {
+            width: 600px;
+            margin: 20px auto;
+            background: #c0c0c0;
+            border: 1px solid #000;
+            box-shadow: inset -1px -1px #fff, inset 1px 1px #0a0a0a, inset -2px -2px #808080, inset 2px 2px #fff;
+        }
+        .title-bar {
+            background: linear-gradient(to right, #000080, #1084d0);
+            color: #fff;
+            padding: 2px 4px;
+            font-size: 14px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .title-bar button {
+            width: 16px;
+            height: 16px;
+            background: #c0c0c0;
+            border: 1px solid #000;
+            box-shadow: inset -1px -1px #fff, inset 1px 1px #0a0a0a;
+            cursor: pointer;
+            font-size: 10px;
+            padding: 0;
+            margin: 0 2px;
+        }
+        .menu-bar {
+            background: #c0c0c0;
+            padding: 2px;
+            border-bottom: 1px solid #808080;
+            border-top: 1px solid #fff;
+        }
+        .menu-bar span {
+            padding: 2px 8px;
+            margin: 0 2px;
+            cursor: pointer;
+        }
+        .menu-bar span:hover {
+            background: #000080;
+            color: #fff;
+        }
+        .file-list {
+            padding: 10px;
+            height: 400px;
+            overflow-y: auto;
+            background: #fff;
+            border: 1px solid #808080;
+            border-top: 1px solid #000;
+            border-left: 1px solid #000;
+            margin: 5px;
+        }
+        .file-item {
+            display: flex;
+            align-items: center;
+            padding: 5px;
+            cursor: pointer;
+        }
+        .file-item:hover {
+            background: #000080;
+            color: #fff;
+        }
+        .file-item img {
+            width: 16px;
+            height: 16px;
+            margin-right: 8px;
+        }
+        .status-bar {
+            background: #c0c0c0;
+            padding: 2px 5px;
+            border-top: 1px solid #808080;
+            font-size: 12px;
+        }
+        .loading, .error {
+            padding: 10px;
+            text-align: center;
+        }
+        .error {
+            color: #ff0000;
+        }
+
+        /* Pixel font simulation */
+        @font-face {
+            font-family: 'MS Sans Serif';
+            src: url('https://fonts.cdnfonts.com/css/ms-sans-serif') format('truetype');
+        }
+    </style>
+</head>
+<body>
+    <div class="window">
+        <div class="title-bar">
+            <span>Explorer - makrivich.github.io/school</span>
+            <div>
+                <button>-</button>
+                <button>□</button>
+                <button>X</button>
+            </div>
+        </div>
+        <div class="menu-bar">
+            <span>File</span>
+            <span>Edit</span>
+            <span>View</span>
+            <span>Help</span>
+        </div>
+        <div class="file-list" id="file-list">
+            <div id="loading" class="loading">Loading files...</div>
+            <div id="error" class="error" style="display: none;"></div>
+        </div>
+        <div class="status-bar" id="status-bar">Loading...</div>
+    </div>
+
+    <script>
+        async function fetchRepoFiles() {
+            const repoUrl = 'https://api.github.com/repos/makrivich/makrivich.github.io/contents/school';
+            const fileList = document.getElementById('file-list');
+            const loading = document.getElementById('loading');
+            const errorDiv = document.getElementById('error');
+            const statusBar = document.getElementById('status-bar');
+
+            try {
+                const response = await fetch(repoUrl);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const files = await response.json();
+
+                loading.style.display = 'none';
+                statusBar.textContent = `${files.length} object(s)`;
+
+                if (files.length === 0) {
+                    errorDiv.textContent = 'No files found in the repository.';
+                    errorDiv.style.display = 'block';
+                    return;
+                }
+
+                files.forEach(file => {
+                    const fileItem = document.createElement('div');
+                    fileItem.className = 'file-item';
+                    
+                    const icon = document.createElement('img');
+                    icon.src = file.type === 'dir' 
+                        ? 'https://win98icons.alexmeub.com/icons/png/folder_closed-0.png'
+                        : 'https://win98icons.alexmeub.com/icons/png/doc-2.png';
+                    
+                    const link = document.createElement('a');
+                    link.href = file.html_url;
+                    link.textContent = file.name;
+                    link.target = '_blank';
+                    link.style.color = 'inherit';
+                    link.style.textDecoration = 'none';
+
+                    fileItem.appendChild(icon);
+                    fileItem.appendChild(link);
+                    fileList.appendChild(fileItem);
+                });
+            } catch (error) {
+                loading.style.display = 'none';
+                errorDiv.textContent = `Error fetching files: ${error.message}`;
+                errorDiv.style.display = 'block';
+                statusBar.textContent = 'Error';
+            }
+        }
+
+        window.onload = fetchRepoFiles;
+    </script>
+</body>
+</html>
