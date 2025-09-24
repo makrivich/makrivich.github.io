@@ -53,11 +53,6 @@
             background-color: rgba(216, 27, 96, 0.1);
         }
 
-        .upcoming-lesson {
-            border: 2px dashed #ffca28; /* Желтый пунктир для урока через 10 минут */
-            background-color: rgba(255, 202, 40, 0.1);
-        }
-
         .no-lesson {
             color: #888;
             font-style: italic;
@@ -108,12 +103,6 @@
         .current-lesson-info {
             color: #d81b60; /* Красный для текущего урока */
             font-weight: bold;
-        }
-
-        .upcoming-lesson-info {
-            color: #ffca28; /* Желтый для урока через 10 минут */
-            font-weight: bold;
-            font-style: italic;
         }
 
         /* Осенние пастельные цвета для предметов */
@@ -209,10 +198,6 @@
             color: #d81b60;
         }
 
-        .dark-theme .upcoming-lesson-info {
-            color: #ffca28;
-        }
-
         .dark-theme .error {
             color: #ef5350;
         }
@@ -247,10 +232,6 @@
 
         .light-theme .current-lesson-info {
             color: #d81b60;
-        }
-
-        .light-theme .upcoming-lesson-info {
-            color: #ffca28;
         }
 
         .light-theme .error {
@@ -289,10 +270,6 @@
                 color: #d81b60;
             }
 
-            body:not(.light-theme):not(.dark-theme) .upcoming-lesson-info {
-                color: #ffca28;
-            }
-
             body:not(.light-theme):not(.dark-theme) .error {
                 color: #ef5350;
             }
@@ -326,7 +303,7 @@
         <button class="files-button" onclick="window.open('https://makrivich.github.io/school/exp', '_blank')">Файлы</button>
         <div id="countdown-result" class="countdown-result"></div>
         <div class="footer">
-            by Makrivich 2025<br>ver. r2.3
+            by Makrivich 2025<br>ver. r2.3.1
         </div>
     </div>
 
@@ -515,7 +492,6 @@
             }
 
             let currentLessonInfo = 'Нет текущего урока';
-            let upcomingLessonInfo = '';
 
             for (let i = 1; i < mainData.length; i++) {
                 const lessonWithTime = mainData[i][0] || '';
@@ -527,7 +503,6 @@
                 const time = scheduleTimes[lesson] || '-';
 
                 let isCurrentLesson = false;
-                let isUpcomingLesson = false;
                 if (!isSunday && time !== '-' && displayDayIndex !== 1) {
                     const [start, end] = time.split('–').map(t => {
                         const [h, m] = t.split(':').map(Number);
@@ -535,9 +510,6 @@
                     });
                     if (currentTime >= start && currentTime <= end) {
                         isCurrentLesson = true;
-                    } else if (currentTime >= start - 10 && currentTime < start) { // За 10 минут до начала
-                        isUpcomingLesson = true;
-                        upcomingLessonInfo = `${subjectName} (${time}) скоро начнется`;
                     }
                 }
 
@@ -548,7 +520,7 @@
 
                     const colorClass = getSubjectColor(subjectName);
                     html += `
-                        <div class="lesson-card ${colorClass} ${isCurrentLesson ? 'current-lesson' : ''} ${isUpcomingLesson ? 'upcoming-lesson' : ''}" style="--index: ${i - 1}">
+                        <div class="lesson-card ${colorClass} ${isCurrentLesson ? 'current-lesson' : ''}" style="--index: ${i - 1}">
                             ${lesson}<br>
                             ${subjectName}<br>
                             ${time}<br>
@@ -567,11 +539,7 @@
 
             if (containerId === 'main-schedule') {
                 const currentLessonElement = document.getElementById('current-lesson');
-                if (upcomingLessonInfo) {
-                    currentLessonElement.innerHTML = `<span class="upcoming-lesson-info">${upcomingLessonInfo}</span>`;
-                } else {
-                    currentLessonElement.innerHTML = currentLessonInfo;
-                }
+                currentLessonElement.innerHTML = currentLessonInfo;
             }
         }
 
@@ -588,7 +556,7 @@
             const { date, isSunday } = getDayWithTimeShift();
             const menuDate = new Date(date);
 
-            if (isSunday) {
+        if (isSunday) {
                 menuDate.setDate(menuDate.getDate() + 1);
             }
 
