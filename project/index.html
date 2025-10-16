@@ -1,0 +1,80 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Расписание</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="header">
+        <div id="current-time" class="info"></div>
+        <button class="theme-button" onclick="toggleTheme()" id="theme-button">⚙️</button>
+    </div>
+    <h1>Расписание</h1>
+    <div class="selection-container">
+        <label for="class-select">Выберите класс:</label>
+        <select id="class-select" onchange="loadSchedule()">
+            <option value="" disabled selected>Выберите класс</option>
+        </select>
+        <label for="day-select">Выберите день:</label>
+        <select id="day-select" onchange="loadSchedule()">
+            <option value="Понедельник">Понедельник</option>
+            <option value="Вторник">Вторник</option>
+            <option value="Среда">Среда</option>
+            <option value="Четверг">Четверг</option>
+            <option value="Пятница">Пятница</option>
+            <option value="Суббота">Суббота</option>
+        </select>
+    </div>
+    <div id="schedule-container" class="schedule-container"><p class="info">Выберите класс и день недели</p></div>
+    <div class="countdown-container">
+        <button class="menu-button" onclick="openMenu()">Открыть меню столовой</button>
+        <button class="task-manager-button" onclick="openTaskManager()">Task Manager</button>
+        <div class="footer">
+            by Makrivich 2025<br>ver. r3.0
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
