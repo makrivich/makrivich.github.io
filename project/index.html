@@ -51,28 +51,37 @@
         <button class="theme-button" onclick="toggleTheme()" id="theme-button">⚙️</button>
     </div>
     <h1>Расписание</h1>
-    <div class="selection-container">
-        <label for="class-select">Выберите класс:</label>
-        <select id="class-select" onchange="loadSchedule()">
-            <option value="" disabled selected>Выберите класс</option>
-        </select>
-        <label for="day-select">Выберите день:</label>
-        <select id="day-select" onchange="loadSchedule()">
-            <option value="Понедельник">Понедельник</option>
-            <option value="Вторник">Вторник</option>
-            <option value="Среда">Среда</option>
-            <option value="Четверг">Четверг</option>
-            <option value="Пятница">Пятница</option>
-            <option value="Суббота">Суббота</option>
-        </select>
+    <div class="tab-container">
+        <button id="class-tab" onclick="switchTab('class')" class="active">По классу</button>
+        <button id="teacher-tab" onclick="switchTab('teacher')">По учителю</button>
     </div>
-    <div id="schedule-container" class="schedule-container"><p class="info">Выберите класс и день недели</p></div>
-    <div class="countdown-container">
-        <button class="menu-button" onclick="openMenu()">Открыть меню столовой</button>
-        <button class="task-manager-button" onclick="openTaskManager()">Task Manager</button>
-        <div class="footer">
-            by Makrivich 2025<br>ver. r3.0
+    <div id="class-mode" class="mode-active">
+        <div class="selection-container">
+            <label for="day-select-class">Выберите день:</label>
+            <select id="day-select-class" onchange="loadSchedule('class')">
+                <option value="" disabled selected>Выберите день</option>
+            </select>
+            <label for="class-select">Выберите класс:</label>
+            <select id="class-select" onchange="loadSchedule('class')">
+                <option value="" disabled selected>Выберите класс</option>
+            </select>
         </div>
+    </div>
+    <div id="teacher-mode" style="display: none;">
+        <div class="selection-container">
+            <label for="day-select-teacher">Выберите день:</label>
+            <select id="day-select-teacher" onchange="loadSchedule('teacher')">
+                <option value="" disabled selected>Выберите день</option>
+            </select>
+            <label for="teacher-select">Выберите учителя:</label>
+            <select id="teacher-select" onchange="loadSchedule('teacher')">
+                <option value="" disabled selected>Выберите учителя</option>
+            </select>
+        </div>
+    </div>
+    <div id="schedule-container"></div>
+    <div class="footer">
+        by Makrivich 2025<br>ver. r3.1
     </div>
 
     <script src="script.js"></script>
