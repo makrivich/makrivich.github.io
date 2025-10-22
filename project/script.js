@@ -26,7 +26,11 @@ const replacements = {
     'рус яз эл': 'Русский язык elekтив',
     'общ эл': 'Обществознание elekтив',
     'инфор эл': 'Информатика elekтив',
-    'зан рус': 'Занимательный русский язык'
+    'зан рус': 'Занимательный русский язык',
+    // Добавим дополнительные сокращения, если есть
+    'физ-ра': 'Физическая культура',
+    'хим': 'Химия',
+    'окр мир': 'Окружающий мир'
 };
 
 const days = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
@@ -110,12 +114,15 @@ async function loadTeachersFromFile() {
         if (!response.ok) throw new Error('Не удалось загрузить id_codes.txt: ' + response.status);
         const text = await response.text();
         teachers = text.trim().split('\n').map(line => {
-            const [id, full, initials, cabinet] = line.split(/\s+/);
+            const [id, ...rest] = line.split(/\s+/);
+            const full = rest.slice(0, -2).join(' ');
+            const initials = rest[rest.length - 2];
+            const cabinet = rest[rest.length - 1];
             return { id, full, initials, cabinet };
         });
     } catch (error) {
         console.error('Ошибка загрузки учителей:', error);
-        teachers = []; // Fallback to empty array if file fails
+        teachers = [];
     }
 }
 
@@ -150,14 +157,7 @@ async function loadClasses() {
 }
 
 function loadTeachers() {
-    const teacherSelect = document.getElementById('teacher-select');
-    teacherSelect.innerHTML = '<option value="" disabled selected>Выберите учителя</option>';
-    teachers.forEach(teacher => {
-        const option = document.createElement('option');
-        option.value = teacher.id;
-        option.textContent = `${teacher.id} - ${teacher.full} (${teacher.initials})`;
-        teacherSelect.appendChild(option);
-    });
+    // Не требуется, так как ID вводится вручную
 }
 
 function loadDays(mode) {
@@ -181,7 +181,7 @@ async function loadSchedule(mode) {
         selectedValue = document.getElementById('class-select').value;
     } else {
         selectedDay = document.getElementById('day-select-teacher').value;
-        selectedValue = document.getElementById('teacher-select').value;
+        selectedValue = document.getElementById('teacher-id-input').value;
     }
     if (!selectedDay || !selectedValue) {
         scheduleContainer.innerHTML = '<p class="info">Выберите день и значение</p>';
@@ -203,24 +203,24 @@ async function loadSchedule(mode) {
             scheduleContainer.innerHTML = '<p class="error">Класс не найден</p>';
             return;
         }
-        html += '<table class="schedule-table"><tr><th>Урок</th><th>Время</th><th>Предмет</th><th>Кабинет</th></tr>';
+        html = '';
         for (let i = 1; i < data.length; i++) {
             const lesson = data[i][0] || '';
             const subject = data[i][classIndex] || 'Нет урока';
             const fullSubject = replaceShortened(subject);
             const cabinet = extractCabinet(subject);
             const time = (selectedDay === 'Суббота' ? SCHEDULE_SATURDAY : SCHEDULE_WEEKDAYS)[lesson] || '-';
-            html += `<tr><td>${lesson}</td><td>${time}</td><td>${fullSubject}</td><td>${cabinet}</td></tr>`;
+            html += `<div class="lesson-card">${lesson} (${time}): ${fullSubject} - Кабинет ${cabinet}</div>`;
         }
-        html += '</table>';
     } else {
         const teacher = teachers.find(t => t.id === selectedValue);
         if (!teacher) {
-            scheduleContainer.innerHTML = '<p class="error">Учитель не найден</p>';
+            scheduleContainer.innerHTML = '<p class="error">Учитель с ID ${selectedValue} не найден</p>';
             return;
         }
         const initials = teacher.initials;
-        html += '<table class="schedule-table"><tr><th>Урок</th><th>Класс</th><th>Предмет</th><th>Кабинет</th></tr>';
+        const defaultCabinet = teacher.cabinet;
+        html = '';
         for (let i = 1; i < data.length; i++) {
             const lesson = data[i][0] || '';
             for (let j = 2; j < data[i].length; j++) {
@@ -228,13 +228,14 @@ async function loadSchedule(mode) {
                 if (subject.includes(initials) || checkSubstitution(subject, initials)) {
                     const className = headerRow[j];
                     const fullSubject = replaceShortened(subject);
-                    const cabinet = extractCabinet(subject);
+                    let cabinet = extractCabinet(subject) || defaultCabinet;
                     const substitution = checkSubstitution(subject, initials) ? ` (зам. ${extractInitials(subject)})` : '';
-                    html += `<tr><td>${lesson}</td><td>${className}</td><td>${fullSubject}${substitution}</td><td>${cabinet}</td></tr>`;
+                    const time = (selectedDay === 'Суббота' ? SCHEDULE_SATURDAY : SCHEDULE_WEEKDAYS)[lesson] || '-';
+                    html += `<div class="lesson-card">${lesson} (${time}): ${fullSubject}${substitution} - Кабинет ${cabinet} (Класс ${className})</div>`;
                 }
             }
         }
-        html += '</table>';
+        if (html === '') html = '<p class="info">Нет уроков для этого учителя</p>';
     }
     scheduleContainer.innerHTML = html;
 }
@@ -244,6 +245,7 @@ function replaceShortened(subject) {
     for (let k = 0; k < parts.length; k++) {
         const key = parts[k].toLowerCase();
         if (replacements[key]) parts[k] = replacements[key];
+        else if (!parts[k].match(/\d+/)) parts[k] = parts[k]; // Сохраняем неизменными, если не число
     }
     return parts.join(' ');
 }
@@ -319,17 +321,11 @@ function openMenu() {
     window.open(finalUrl, '_blank');
 }
 
-function openTaskManager() {
-    const confirmed = confirm('Это бета-функция и может работать нестабильно. Продолжить?');
-    if (confirmed) window.open('https://makrivich.github.io/taskmanager/', '_blank');
-}
-
 async function init() {
-    await loadTeachersFromFile(); // Load teachers from GitHub
+    await loadTeachersFromFile();
     loadDays('class');
     loadDays('teacher');
     await loadClasses();
-    loadTeachers();
     updateCurrentTime();
     setInterval(updateCurrentTime, 60000);
 
