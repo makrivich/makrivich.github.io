@@ -66,25 +66,58 @@ const SUBJECT_FULL_NAMES = {
     'зан рус': 'Занимательный русский язык'
 };
 
-// Функция для получения полного названия предмета
-function getFullSubjectName(subject) {
-    if (!subject || subject === 'Нет урока') return subject;
-    const parts = subject.split(' ');
-    const roomNumber = parts.pop();
-    let subjectName = parts.join(' ');
-    const match = subjectName.match(/(.*?)\s*\((.*)\)/);
-    let initials = '';
-    if (match) {
-        subjectName = match[1].trim();
-        initials = match[2];
-    }
-    for (const key in SUBJECT_FULL_NAMES) {
-        if (subjectName.toLowerCase().includes(key)) {
-            return `${SUBJECT_FULL_NAMES[key]}${initials ? ` (${initials})` : ''} ${roomNumber}`;
+// Функция для парсинга строки урока на части
+function getLessonParts(subject) {
+    if (subject === 'Нет урока') return [];
+    const rawParts = subject.split('/');
+    const lessons = [];
+    let current = null;
+    for (let raw of rawParts) {
+        raw = raw.trim();
+        if (!raw) continue;
+        const parts = raw.split(/\s+/);
+        let room = parts.pop();
+        let hasRoom = /^\d+$/.test(room);
+        if (!hasRoom) {
+            parts.push(room);
+            room = null;
+        }
+        let subjectStr = parts.join(' ');
+        let initials = '';
+        const match = subjectStr.match(/(.*)\s*\((.*?)\)$/);
+        if (match) {
+            subjectStr = match[1].trim();
+            initials = match[2].trim();
+        }
+        let fullSubject = subjectStr;
+        let matched = false;
+        for (const key in SUBJECT_FULL_NAMES) {
+            if (subjectStr.toLowerCase().includes(key)) {
+                fullSubject = SUBJECT_FULL_NAMES[key];
+                matched = true;
+                break;
+            }
+        }
+        if (!matched && subjectStr) {
+            console.warn(`Сокращение не найдено для предмета: ${subjectStr}`);
+        }
+        if (subjectStr) { // Новый урок
+            if (current) {
+                lessons.push(current);
+            }
+            current = {
+                subjectName: fullSubject,
+                initials: initials,
+                rooms: room ? [room] : []
+            };
+        } else if (current && room) { // Дополнительный кабинет для текущего урока
+            current.rooms.push(room);
         }
     }
-    console.warn(`Сокращение не найдено для предмета: ${subjectName}`);
-    return `${subjectName}${initials ? ` (${initials})` : ''} ${roomNumber}`;
+    if (current) {
+        lessons.push(current);
+    }
+    return lessons;
 }
 
 async function fetchSchedule(url) {
@@ -225,18 +258,22 @@ async function loadSchedule() {
         return;
     }
 
+    const headerRow = data[0] || [];
+
     const scheduleTimes = selectedDay === 'Суббота' ? SCHEDULE_SATURDAY : SCHEDULE_WEEKDAYS;
     const { date, isSunday } = getDayWithTimeShift();
     const currentTime = date.getHours() * 60 + date.getMinutes();
-    const isCurrentDay = selectedDay === ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'][getDayWithTimeShift().displayDayIndex];
+    const dayNames = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
+    const isCurrentDay = selectedDay === dayNames[getDayWithTimeShift().displayDayIndex];
 
     let html = `<h2>${selectedDay}, ${mode === 'class' ? selectedClass : `ID ${selectedId}`}</h2>`;
     if (isSunday && selectedDay === 'Понедельник') {
         html += `<p class="info">Сегодня воскресенье, показываем расписание на понедельник.</p>`;
     }
 
+    let indexCounter = 0;
+
     if (mode === 'class') {
-        const headerRow = data[0] || [];
         const classIndex = headerRow.indexOf(selectedClass);
 
         if (classIndex === -1) {
@@ -244,12 +281,8 @@ async function loadSchedule() {
             return;
         }
 
-        let foundCurrentLesson = false;
-
         for (let i = 1; i < data.length; i++) {
             const lessonWithTime = data[i][0] || '';
-            const subject = data[i][classIndex] || 'Нет урока';
-
             const match = lessonWithTime.match(/(.*)\s*\((.*)\)/);
             const lesson = match ? match[1].trim() : lessonWithTime;
             const time = scheduleTimes[lesson] || '-';
@@ -262,29 +295,40 @@ async function loadSchedule() {
                 });
                 if (currentTime >= start && currentTime <= end) {
                     isCurrentLesson = true;
-                    foundCurrentLesson = true;
                 }
             }
 
-            if (lesson) {
-                const fullSubject = getFullSubjectName(subject);
-                const subjectParts = fullSubject.split(' ');
-                const roomNumber = subject === 'Нет урока' ? '' : subjectParts.pop();
-                const subjectName = subject === 'Нет урока' ? 'Нет урока' : subjectParts.join(' ');
+            const subject = data[i][classIndex] || 'Нет урока';
+            const lessons = getLessonParts(subject);
 
+            if (lessons.length === 0) {
                 html += `
-                    <div class="lesson-card ${isCurrentLesson ? 'current-lesson' : ''}" style="--index: ${i - 1}">
+                    <div class="lesson-card no-lesson ${isCurrentLesson ? 'current-lesson' : ''}" style="--index: ${indexCounter}">
                         ${lesson}<br>
-                        ${subjectName}<br>
-                        ${time}<br>
-                        ${subject === 'Нет урока' ? '' : roomNumber + ' кабинет'}
+                        Нет урока<br>
+                        ${time}
                     </div>
                 `;
+                indexCounter++;
+            } else {
+                lessons.forEach((les, k) => {
+                    const displayName = les.subjectName + (les.initials ? ` (${les.initials})` : '');
+                    les.rooms.forEach((room, m) => {
+                        html += `
+                            <div class="lesson-card ${isCurrentLesson ? 'current-lesson' : ''}" style="--index: ${indexCounter}">
+                                ${lesson}<br>
+                                ${displayName}<br>
+                                ${time}<br>
+                                ${room} кабинет
+                            </div>
+                        `;
+                        indexCounter += 0.1; // Для анимации
+                    });
+                });
             }
         }
 
-        scheduleContainer.innerHTML = html;
-    } else {
+    } else { // mode 'id'
         const teacherCabinetData = await fetchTeacherCabinetData();
         if (!teacherCabinetData || !teacherCabinetData[selectedId]) {
             scheduleContainer.innerHTML = `<p class="error">ID ${selectedId} не найден</p>`;
@@ -311,37 +355,42 @@ async function loadSchedule() {
                 }
             }
 
-            if (lesson) {
-                for (let j = 1; j < data[i].length; j++) {
-                    const subject = data[i][j] || 'Нет урока';
-                    const fullSubject = getFullSubjectName(subject);
-                    const subjectParts = fullSubject.split(' ');
-                    const roomNumber = subject === 'Нет урока' ? '' : subjectParts.pop();
-                    const subjectName = subject === 'Нет урока' ? 'Нет урока' : subjectParts.join(' ');
-                    const className = data[0][j] || 'Неизвестный класс';
+            if (!lesson) continue;
 
-                    if ((cabinet && roomNumber === cabinet) || (initials && fullSubject.includes(`(${initials})`))) {
+            for (let j = 1; j < headerRow.length; j++) {
+                const cell = data[i][j] || 'Нет урока';
+                if (cell === 'Нет урока') continue;
+
+                const lessons = getLessonParts(cell);
+                lessons.forEach(les => {
+                    const displayName = les.subjectName + (les.initials ? ` (${les.initials})` : '');
+                    const isInitialsMatch = initials && les.initials === initials;
+                    const matchingRooms = les.rooms.filter(room => !cabinet || room === cabinet);
+                    if ((isInitialsMatch && matchingRooms.length > 0) || (!isInitialsMatch && matchingRooms.length > 0)) {
                         foundLessons = true;
-                        html += `
-                            <div class="lesson-card ${isCurrentLesson ? 'current-lesson' : ''}" style="--index: ${i - 1}">
-                                ${lesson}<br>
-                                ${subjectName}<br>
-                                ${time}<br>
-                                ${className}<br>
-                                ${subject === 'Нет урока' ? '' : roomNumber + ' кабинет'}
-                            </div>
-                        `;
+                        matchingRooms.forEach(room => {
+                            html += `
+                                <div class="lesson-card ${isCurrentLesson ? 'current-lesson' : ''}" style="--index: ${indexCounter}">
+                                    ${lesson}<br>
+                                    ${displayName}<br>
+                                    ${time}<br>
+                                    ${headerRow[j]}<br>
+                                    ${room} кабинет
+                                </div>
+                            `;
+                            indexCounter += 0.1;
+                        });
                     }
-                }
+                });
             }
         }
 
         if (!foundLessons) {
             html += `<p class="info">Нет уроков для ID ${selectedId} в ${selectedDay}</p>`;
         }
-
-        scheduleContainer.innerHTML = html;
     }
+
+    scheduleContainer.innerHTML = html;
 }
 
 function toggleMode() {
