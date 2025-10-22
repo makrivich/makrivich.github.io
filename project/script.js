@@ -1,40 +1,4 @@
-let teachers = [];
-
-const replacements = {
-    'матем': 'Математика',
-    'рус яз': 'Русский язык',
-    'англ яз': 'Английский язык',
-    'инфор': 'Информатика',
-    'ИЗО': 'Изобразительное искусство',
-    'литер': 'Литература',
-    'геогр': 'География',
-    'проф': 'Профориентация',
-    'биол': 'Биология',
-    'физика': 'Физика',
-    'физ Т': 'Физика',
-    'физ С': 'Физика',
-    'геом': 'Геометрия',
-    'алгеб': 'Алгебра',
-    'ВиС': 'Вероятность и Статистика',
-    'общ': 'Обществознание',
-    'общ С': 'Обществознание',
-    'общ Т': 'Обществознание',
-    'ОБЗР': 'Основы безопасности и Защиты Родины',
-    'труд': 'Труд',
-    'музыка': 'Музыка',
-    'истор': 'История',
-    'рус яз эл': 'Русский язык elekтив',
-    'общ эл': 'Обществознание elekтив',
-    'инфор эл': 'Информатика elekтив',
-    'зан рус': 'Занимательный русский язык',
-    // Добавим дополнительные сокращения, если есть
-    'физ-ра': 'Физическая культура',
-    'хим': 'Химия',
-    'окр мир': 'Окружающий мир'
-};
-
-const days = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
-
+// URL для расписания по дням недели
 const SCHEDULE_URLS = {
     'Понедельник': 'https://docs.google.com/spreadsheets/d/1lHa4KM1pvTWCQpyvIAUUmJ8OlcNPh_LD/export?format=csv',
     'Вторник': 'https://docs.google.com/spreadsheets/d/1vd879IwGkXY2jyI4BuEStsIAMrTJN1w-/export?format=csv',
@@ -44,6 +8,10 @@ const SCHEDULE_URLS = {
     'Суббота': 'https://docs.google.com/spreadsheets/d/16agkm-1YKvEOyBdwOBMbpXX_dQaIytmC/export?format=csv'
 };
 
+// URL для таблицы с ID/ФИО/инициалами/кабинетами
+const TEACHER_CABINET_URL = 'https://docs.google.com/spreadsheets/d/1UvKBhlXNfwll1DnY5wwxitAvzb-Fq4X1QbVCBAg0Wmw/export?format=csv';
+
+// Расписание звонков
 const SCHEDULE_WEEKDAYS = {
     '0 урок': '7:45–8:25',
     '1 урок': '8:30–9:10',
@@ -68,14 +36,66 @@ const SCHEDULE_SATURDAY = {
     '8 урок': '14:45–15:20'
 };
 
-let currentMode = 'class';
+// Словарь для полных названий предметов
+const SUBJECT_FULL_NAMES = {
+    'матем': 'Математика',
+    'рус яз': 'Русский язык',
+    'англ яз': 'Английский язык',
+    'инфор': 'Информатика',
+    'ИЗО': 'Изобразительное искусство',
+    'литер': 'Литература',
+    'геогр': 'География',
+    'проф': 'Профориентация',
+    'биол': 'Биология',
+    'физика': 'Физика',
+    'физ Т': 'Физика',
+    'физ С': 'Физика',
+    'геом': 'Геометрия',
+    'алгеб': 'Алгебра',
+    'ВиС': 'Вероятность и Статистика',
+    'общ': 'Обществознание',
+    'общ С': 'Обществознание',
+    'общ Т': 'Обществознание',
+    'ОБЗР': 'Основы безопасности и Защиты Родины',
+    'труд': 'Труд',
+    'музыка': 'Музыка',
+    'истор': 'История',
+    'рус яз эл': 'Русский язык электив',
+    'общ эл': 'Обществознание электив',
+    'инфор эл': 'Информатика электив',
+    'зан рус': 'Занимательный русский язык'
+};
+
+// Функция для получения полного названия предмета
+function getFullSubjectName(subject) {
+    if (!subject || subject === 'Нет урока') return subject;
+    const parts = subject.split(' ');
+    const roomNumber = parts.pop();
+    let subjectName = parts.join(' ');
+    const match = subjectName.match(/(.*?)\s*\((.*)\)/);
+    let initials = '';
+    if (match) {
+        subjectName = match[1].trim();
+        initials = match[2];
+    }
+    for (const key in SUBJECT_FULL_NAMES) {
+        if (subjectName.toLowerCase().includes(key)) {
+            return `${SUBJECT_FULL_NAMES[key]}${initials ? ` (${initials})` : ''} ${roomNumber}`;
+        }
+    }
+    console.warn(`Сокращение не найдено для предмета: ${subjectName}`);
+    return `${subjectName}${initials ? ` (${initials})` : ''} ${roomNumber}`;
+}
 
 async function fetchSchedule(url) {
     try {
         const response = await fetch(url);
-        if (!response.ok) throw new Error('Не удалось загрузить данные: ' + response.status);
+        if (!response.ok) {
+            throw new Error('Не удалось загрузить данные: ' + response.status);
+        }
         const text = await response.text();
-        return parseCSV(text);
+        const data = parseCSV(text);
+        return data;
     } catch (error) {
         console.error('Ошибка загрузки данных:', error);
         return null;
@@ -90,8 +110,9 @@ function parseCSV(text) {
 
     for (let i = 0; i < text.length; i++) {
         const char = text[i];
-        if (char === '"') insideQuotes = !insideQuotes;
-        else if (char === ',' && !insideQuotes) {
+        if (char === '"') {
+            insideQuotes = !insideQuotes;
+        } else if (char === ',' && !insideQuotes) {
             currentRow.push(currentCell.trim());
             currentCell = '';
         } else if (char === '\n' && !insideQuotes) {
@@ -99,7 +120,9 @@ function parseCSV(text) {
             rows.push(currentRow);
             currentRow = [];
             currentCell = '';
-        } else currentCell += char;
+        } else {
+            currentCell += char;
+        }
     }
     if (currentCell || currentRow.length > 0) {
         currentRow.push(currentCell.trim());
@@ -108,32 +131,47 @@ function parseCSV(text) {
     return rows;
 }
 
-async function loadTeachersFromFile() {
-    try {
-        const response = await fetch('https://makrivich.github.io/project/id_codes.txt');
-        if (!response.ok) throw new Error('Не удалось загрузить id_codes.txt: ' + response.status);
-        const text = await response.text();
-        teachers = text.trim().split('\n').map(line => {
-            const [id, ...rest] = line.split(/\s+/);
-            const full = rest.slice(0, -2).join(' ');
-            const initials = rest[rest.length - 2];
-            const cabinet = rest[rest.length - 1];
-            return { id, full, initials, cabinet };
-        });
-    } catch (error) {
-        console.error('Ошибка загрузки учителей:', error);
-        teachers = [];
+async function fetchTeacherCabinetData() {
+    const data = await fetchSchedule(TEACHER_CABINET_URL);
+    if (!data) return null;
+    const teacherCabinetMap = {};
+    for (let i = 1; i < data.length; i++) {
+        const [id, , initials, cabinet] = data[i];
+        if (id && (initials || cabinet)) {
+            teacherCabinetMap[id] = { initials, cabinet };
+        }
     }
+    return teacherCabinetMap;
 }
 
-function switchTab(mode) {
-    document.getElementById('class-tab').classList.remove('active');
-    document.getElementById('teacher-tab').classList.remove('active');
-    document.getElementById(mode + '-tab').classList.add('active');
-    document.getElementById('class-mode').style.display = mode === 'class' ? 'block' : 'none';
-    document.getElementById('teacher-mode').style.display = mode === 'teacher' ? 'block' : 'none';
-    document.getElementById('schedule-container').innerHTML = '';
-    currentMode = mode;
+function getDayWithTimeShift() {
+    const now = new Date();
+    const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
+    const utcPlus5Time = new Date(utcTime + (5 * 60 * 60 * 1000));
+
+    let dayIndex = utcPlus5Time.getDay();
+    const hours = utcPlus5Time.getHours();
+    const minutes = utcPlus5Time.getMinutes();
+
+    if (dayIndex === 0) {
+        return {
+            displayDayIndex: 1,
+            isSunday: true,
+            date: utcPlus5Time
+        };
+    }
+
+    const isAfter16 = (hours > 16) || (hours === 16 && minutes >= 0);
+    if (isAfter16) {
+        dayIndex = (dayIndex + 1) % 7;
+        utcPlus5Time.setDate(utcPlus5Time.getDate() + 1);
+    }
+
+    return {
+        displayDayIndex: dayIndex,
+        isSunday: false,
+        date: utcPlus5Time
+    };
 }
 
 async function loadClasses() {
@@ -141,13 +179,19 @@ async function loadClasses() {
     classSelect.innerHTML = '<option value="" disabled selected>Выберите класс</option>';
 
     const classes = new Set();
-    for (const day of days) {
+
+    for (const day in SCHEDULE_URLS) {
         const data = await fetchSchedule(SCHEDULE_URLS[day]);
         if (data && data[0]) {
             const headerRow = data[0];
-            for (let i = 2; i < headerRow.length; i++) if (headerRow[i]) classes.add(headerRow[i]);
+            for (let i = 1; i < headerRow.length; i++) {
+                if (headerRow[i]) {
+                    classes.add(headerRow[i]);
+                }
+            }
         }
     }
+
     classes.forEach(className => {
         const option = document.createElement('option');
         option.value = className;
@@ -156,37 +200,24 @@ async function loadClasses() {
     });
 }
 
-function loadTeachers() {
-    // Не требуется, так как ID вводится вручную
-}
-
-function loadDays(mode) {
-    const daySelect = document.getElementById('day-select-' + mode);
-    daySelect.innerHTML = '<option value="" disabled selected>Выберите день</option>';
-    days.forEach(day => {
-        const option = document.createElement('option');
-        option.value = day;
-        option.textContent = day;
-        daySelect.appendChild(option);
-    });
-}
-
-async function loadSchedule(mode) {
+async function loadSchedule() {
+    const modeSelect = document.getElementById('mode-select');
+    const classSelect = document.getElementById('class-select');
+    const idInput = document.getElementById('id-input');
+    const daySelect = document.getElementById('day-select');
     const scheduleContainer = document.getElementById('schedule-container');
-    scheduleContainer.innerHTML = '<p class="loading">Подождите, расписание загружается...</p>';
 
-    let selectedDay, selectedValue;
-    if (mode === 'class') {
-        selectedDay = document.getElementById('day-select-class').value;
-        selectedValue = document.getElementById('class-select').value;
-    } else {
-        selectedDay = document.getElementById('day-select-teacher').value;
-        selectedValue = document.getElementById('teacher-id-input').value;
-    }
-    if (!selectedDay || !selectedValue) {
-        scheduleContainer.innerHTML = '<p class="info">Выберите день и значение</p>';
+    const mode = modeSelect.value;
+    const selectedClass = classSelect.value;
+    const selectedId = idInput.value.trim();
+    const selectedDay = daySelect.value;
+
+    if ((mode === 'class' && !selectedClass) || (mode === 'id' && !selectedId) || !selectedDay) {
+        scheduleContainer.innerHTML = '<p class="info">Выберите режим, класс/ID и день недели</p>';
         return;
     }
+
+    scheduleContainer.innerHTML = '<p class="loading">Подождите, расписание загружается...</p>';
 
     const data = await fetchSchedule(SCHEDULE_URLS[selectedDay]);
     if (!data) {
@@ -194,96 +225,175 @@ async function loadSchedule(mode) {
         return;
     }
 
-    const headerRow = data[0] || [];
-    let html = `<h2>${selectedDay}</h2>`;
+    const scheduleTimes = selectedDay === 'Суббота' ? SCHEDULE_SATURDAY : SCHEDULE_WEEKDAYS;
+    const { date, isSunday } = getDayWithTimeShift();
+    const currentTime = date.getHours() * 60 + date.getMinutes();
+    const isCurrentDay = selectedDay === ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'][getDayWithTimeShift().displayDayIndex];
+
+    let html = `<h2>${selectedDay}, ${mode === 'class' ? selectedClass : `ID ${selectedId}`}</h2>`;
+    if (isSunday && selectedDay === 'Понедельник') {
+        html += `<p class="info">Сегодня воскресенье, показываем расписание на понедельник.</p>`;
+    }
 
     if (mode === 'class') {
-        const classIndex = headerRow.indexOf(selectedValue);
+        const headerRow = data[0] || [];
+        const classIndex = headerRow.indexOf(selectedClass);
+
         if (classIndex === -1) {
-            scheduleContainer.innerHTML = '<p class="error">Класс не найден</p>';
+            scheduleContainer.innerHTML = `<p class="error">Класс ${selectedClass} не найден для ${selectedDay}</p>`;
             return;
         }
-        html = '';
+
+        let foundCurrentLesson = false;
+
         for (let i = 1; i < data.length; i++) {
-            const lesson = data[i][0] || '';
+            const lessonWithTime = data[i][0] || '';
             const subject = data[i][classIndex] || 'Нет урока';
-            const fullSubject = replaceShortened(subject);
-            const cabinet = extractCabinet(subject);
-            const time = (selectedDay === 'Суббота' ? SCHEDULE_SATURDAY : SCHEDULE_WEEKDAYS)[lesson] || '-';
-            html += `<div class="lesson-card">${lesson} (${time}): ${fullSubject} - Кабинет ${cabinet}</div>`;
+
+            const match = lessonWithTime.match(/(.*)\s*\((.*)\)/);
+            const lesson = match ? match[1].trim() : lessonWithTime;
+            const time = scheduleTimes[lesson] || '-';
+
+            let isCurrentLesson = false;
+            if (!isSunday && isCurrentDay && time !== '-') {
+                const [start, end] = time.split('–').map(t => {
+                    const [h, m] = t.split(':').map(Number);
+                    return h * 60 + m;
+                });
+                if (currentTime >= start && currentTime <= end) {
+                    isCurrentLesson = true;
+                    foundCurrentLesson = true;
+                }
+            }
+
+            if (lesson) {
+                const fullSubject = getFullSubjectName(subject);
+                const subjectParts = fullSubject.split(' ');
+                const roomNumber = subject === 'Нет урока' ? '' : subjectParts.pop();
+                const subjectName = subject === 'Нет урока' ? 'Нет урока' : subjectParts.join(' ');
+
+                html += `
+                    <div class="lesson-card ${isCurrentLesson ? 'current-lesson' : ''}" style="--index: ${i - 1}">
+                        ${lesson}<br>
+                        ${subjectName}<br>
+                        ${time}<br>
+                        ${subject === 'Нет урока' ? '' : roomNumber + ' кабинет'}
+                    </div>
+                `;
+            }
         }
+
+        scheduleContainer.innerHTML = html;
     } else {
-        const teacher = teachers.find(t => t.id === selectedValue);
-        if (!teacher) {
-            scheduleContainer.innerHTML = '<p class="error">Учитель с ID ${selectedValue} не найден</p>';
+        const teacherCabinetData = await fetchTeacherCabinetData();
+        if (!teacherCabinetData || !teacherCabinetData[selectedId]) {
+            scheduleContainer.innerHTML = `<p class="error">ID ${selectedId} не найден</p>`;
             return;
         }
-        const initials = teacher.initials;
-        const defaultCabinet = teacher.cabinet;
-        html = '';
+
+        const { initials, cabinet } = teacherCabinetData[selectedId];
+        let foundLessons = false;
+
         for (let i = 1; i < data.length; i++) {
-            const lesson = data[i][0] || '';
-            for (let j = 2; j < data[i].length; j++) {
-                const subject = data[i][j] || '';
-                if (subject.includes(initials) || checkSubstitution(subject, initials)) {
-                    const className = headerRow[j];
-                    const fullSubject = replaceShortened(subject);
-                    let cabinet = extractCabinet(subject) || defaultCabinet;
-                    const substitution = checkSubstitution(subject, initials) ? ` (зам. ${extractInitials(subject)})` : '';
-                    const time = (selectedDay === 'Суббота' ? SCHEDULE_SATURDAY : SCHEDULE_WEEKDAYS)[lesson] || '-';
-                    html += `<div class="lesson-card">${lesson} (${time}): ${fullSubject}${substitution} - Кабинет ${cabinet} (Класс ${className})</div>`;
+            const lessonWithTime = data[i][0] || '';
+            const match = lessonWithTime.match(/(.*)\s*\((.*)\)/);
+            const lesson = match ? match[1].trim() : lessonWithTime;
+            const time = scheduleTimes[lesson] || '-';
+
+            let isCurrentLesson = false;
+            if (!isSunday && isCurrentDay && time !== '-') {
+                const [start, end] = time.split('–').map(t => {
+                    const [h, m] = t.split(':').map(Number);
+                    return h * 60 + m;
+                });
+                if (currentTime >= start && currentTime <= end) {
+                    isCurrentLesson = true;
+                }
+            }
+
+            if (lesson) {
+                for (let j = 1; j < data[i].length; j++) {
+                    const subject = data[i][j] || 'Нет урока';
+                    const fullSubject = getFullSubjectName(subject);
+                    const subjectParts = fullSubject.split(' ');
+                    const roomNumber = subject === 'Нет урока' ? '' : subjectParts.pop();
+                    const subjectName = subject === 'Нет урока' ? 'Нет урока' : subjectParts.join(' ');
+                    const className = data[0][j] || 'Неизвестный класс';
+
+                    if ((cabinet && roomNumber === cabinet) || (initials && fullSubject.includes(`(${initials})`))) {
+                        foundLessons = true;
+                        html += `
+                            <div class="lesson-card ${isCurrentLesson ? 'current-lesson' : ''}" style="--index: ${i - 1}">
+                                ${lesson}<br>
+                                ${subjectName}<br>
+                                ${time}<br>
+                                ${className}<br>
+                                ${subject === 'Нет урока' ? '' : roomNumber + ' кабинет'}
+                            </div>
+                        `;
+                    }
                 }
             }
         }
-        if (html === '') html = '<p class="info">Нет уроков для этого учителя</p>';
-    }
-    scheduleContainer.innerHTML = html;
-}
 
-function replaceShortened(subject) {
-    let parts = subject.split(' ');
-    for (let k = 0; k < parts.length; k++) {
-        const key = parts[k].toLowerCase();
-        if (replacements[key]) parts[k] = replacements[key];
-        else if (!parts[k].match(/\d+/)) parts[k] = parts[k]; // Сохраняем неизменными, если не число
-    }
-    return parts.join(' ');
-}
-
-function extractCabinet(subject) {
-    const parts = subject.split(' ');
-    const last = parts[parts.length - 1];
-    return last.match(/\d+/) ? last : '';
-}
-
-function extractInitials(subject) {
-    const match = subject.match(/[A-Z]{2,}/);
-    return match ? match[0] : '';
-}
-
-function checkSubstitution(subject, initials) {
-    const parts = subject.split(' ');
-    for (let part of parts) {
-        if (part !== initials && teachers.some(t => t.initials === part)) {
-            return true;
+        if (!foundLessons) {
+            html += `<p class="info">Нет уроков для ID ${selectedId} в ${selectedDay}</p>`;
         }
+
+        scheduleContainer.innerHTML = html;
     }
-    return false;
+}
+
+function toggleMode() {
+    const modeSelect = document.getElementById('mode-select');
+    const classSelection = document.getElementById('class-selection');
+    const idSelection = document.getElementById('id-selection');
+
+    if (modeSelect.value === 'class') {
+        classSelection.style.display = 'block';
+        idSelection.style.display = 'none';
+    } else {
+        classSelection.style.display = 'none';
+        idSelection.style.display = 'block';
+    }
+    loadSchedule();
+}
+
+function formatDateForMenu(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+function openMenu() {
+    const { date, isSunday } = getDayWithTimeShift();
+    const menuDate = new Date(date);
+
+    if (isSunday) {
+        menuDate.setDate(menuDate.getDate() + 1);
+    }
+
+    const formattedDate = formatDateForMenu(menuDate);
+    const encodedMenuUrl = encodeURIComponent(`https://aksioma.obrku.ru/food/${formattedDate}-sm.xlsx`);
+    const finalUrl = `https://view.officeapps.live.com/op/view.aspx?src=${encodedMenuUrl}&wdOrigin=BROWSELINK`;
+    window.open(finalUrl, '_blank');
 }
 
 function updateCurrentTime() {
-    const now = new Date();
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const year = now.getFullYear();
-    document.getElementById('current-time').innerHTML = `Сегодня: ${day}.${month}.${year}, ${hours}:${minutes} UTC+2`;
+    const { date } = getDayWithTimeShift();
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    document.getElementById('current-time').innerHTML = `Сегодня: ${day}.${month}.${year}, ${hours}:${minutes} UTC+5`;
 }
 
 function toggleTheme() {
     const themeButton = document.getElementById('theme-button');
     const currentTheme = localStorage.getItem('theme') || 'system';
+
     if (currentTheme === 'dark') {
         document.body.classList.remove('dark-theme');
         document.body.classList.remove('light-theme');
@@ -311,24 +421,7 @@ function applySystemTheme() {
     }
 }
 
-function openMenu() {
-    const now = new Date();
-    const menuDate = new Date(now);
-    if (now.getDay() === 0) menuDate.setDate(menuDate.getDate() + 1);
-    const formattedDate = `${menuDate.getFullYear()}-${String(menuDate.getMonth() + 1).padStart(2, '0')}-${String(menuDate.getDate()).padStart(2, '0')}`;
-    const encodedMenuUrl = encodeURIComponent(`https://aksioma.obrku.ru/food/${formattedDate}-sm.xlsx`);
-    const finalUrl = `https://view.officeapps.live.com/op/view.aspx?src=${encodedMenuUrl}&wdOrigin=BROWSELINK`;
-    window.open(finalUrl, '_blank');
-}
-
 async function init() {
-    await loadTeachersFromFile();
-    loadDays('class');
-    loadDays('teacher');
-    await loadClasses();
-    updateCurrentTime();
-    setInterval(updateCurrentTime, 60000);
-
     const savedTheme = localStorage.getItem('theme') || 'system';
     const themeButton = document.getElementById('theme-button');
     if (savedTheme === 'dark') {
@@ -355,6 +448,10 @@ async function init() {
             }
         }
     });
+
+    await loadClasses();
+    updateCurrentTime();
+    setInterval(updateCurrentTime, 60000);
 }
 
 init();
