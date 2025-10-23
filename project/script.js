@@ -353,8 +353,13 @@ async function loadSchedule() {
                 indexCounter++;
             } else {
                 lessons.forEach((les, k) => {
-                    const displayName = les.subjectName + (les.initials ? ` (${les.initials})` : '');
-                    const commentHtml = les.comment.length > 0 ? `<br>${les.comment.join('<br>')}` : '';
+                    let displayName = les.subjectName;
+                    if (les.comment.length > 0) {
+                        displayName += ' ' + les.comment.join(' ');
+                        les.comment = []; // Clear comment since it's now part of subjectName
+                    }
+                    displayName += (les.initials ? ` (${les.initials})` : '');
+                    const commentHtml = ''; // No separate comment now
                     const prefix = les.onlyCertainRooms ? 'только ' : '';
                     les.rooms.forEach((room, m) => {
                         const baseDisplayRoom = /^\d+$/.test(room) ? room + ' кабинет' : room;
@@ -418,8 +423,13 @@ async function loadSchedule() {
 
                 const lessons = getLessonParts(cell);
                 lessons.forEach(les => {
-                    const displayName = les.subjectName + (les.initials ? ` (${les.initials})` : '');
-                    const commentHtml = les.comment.length > 0 ? `<br>${les.comment.join('<br>')}` : '';
+                    let displayName = les.subjectName;
+                    if (les.comment.length > 0) {
+                        displayName += ' ' + les.comment.join(' ');
+                        les.comment = [];
+                    }
+                    displayName += (les.initials ? ` (${les.initials})` : '');
+                    const commentHtml = '';
                     const prefix = les.onlyCertainRooms ? 'только ' : '';
                     const isInitialsMatch = initials && les.initials === initials;
                     const matchingRooms = les.rooms.filter(room => cabinets.includes(room.toLowerCase()));
