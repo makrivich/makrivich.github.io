@@ -69,9 +69,6 @@ const SUBJECT_FULL_NAMES = {
     'физра': 'Физическая культура'
 };
 
-// Специальные многословные кабинеты
-const SPECIAL_MULTI_WORD_ROOMS = ['акт зал'];
-
 // Функция для парсинга строки урока на части
 function getLessonParts(subject) {
     if (subject === 'Нет урока') return [];
@@ -81,32 +78,21 @@ function getLessonParts(subject) {
     for (let raw of rawParts) {
         if (raw === '---') {
             if (current) {
-                current.rooms.push('---');
-                current.isCancelled = true;
+                lessons.push(current);
+                lessons.push({subjectName: current.subjectName + ' отменен', initials: '', rooms: [], comment: []});
+                current = null;
             } else {
-                lessons.push({subjectName: 'Урок отменен', initials: '', rooms: [], comment: [], isCancelled: true});
+                lessons.push({subjectName: 'Урок отменен', initials: '', rooms: [], comment: []});
             }
             continue;
         }
         const parts = raw.split(/\s+/);
-        let room = null;
-        let hasRoom = false;
-
-        // Проверка на многословный кабинет
-        let potentialRoom = parts.slice(-2).join(' ');
-        if (SPECIAL_MULTI_WORD_ROOMS.includes(potentialRoom)) {
-            room = potentialRoom;
-            hasRoom = true;
-            parts.splice(-2, 2);
-        } else {
-            potentialRoom = parts[parts.length - 1];
-            hasRoom = /^\d+[а-яА-Я]?$/i.test(potentialRoom) || ['зал', '---'].includes(potentialRoom);
-            if (hasRoom) {
-                room = potentialRoom;
-                parts.pop();
-            }
+        let room = parts.pop();
+        let hasRoom = /^\d+[а-яА-Я]?$/i.test(room);
+        if (!hasRoom) {
+            parts.push(room);
+            room = null;
         }
-
         let subjectStr = parts.join(' ');
         let initials = '';
         const match = subjectStr.match(/(.*)\s*\((.*?)\)$/);
@@ -116,28 +102,23 @@ function getLessonParts(subject) {
         }
         let fullSubject = subjectStr;
         let matched = false;
+        let usedKey = '';
         for (const key in SUBJECT_FULL_NAMES) {
             if (subjectStr.toLowerCase().includes(key.toLowerCase())) {
                 fullSubject = SUBJECT_FULL_NAMES[key];
                 matched = true;
+                usedKey = key;
                 break;
             }
         }
-        if (subjectStr && !matched) {
-            if (current) {
-                current.comment.push(raw);
-                continue;
-            } else {
-                fullSubject = subjectStr;
-            }
-        } else if (!subjectStr && current && room) {
-            current.rooms.push(room);
-            continue;
-        } else if (!subjectStr && current) {
-            current.comment.push(raw);
-            continue;
+        let extra = '';
+        if (matched) {
+            extra = subjectStr.toLowerCase().replace(usedKey, '').trim();
         }
-        if (subjectStr) { // Новый урок
+        if (!matched && subjectStr) {
+            console.warn(`Сокращение не найдено для предмета: ${subjectStr}`);
+        }
+        if (subjectStr && matched) { // Новый урок
             if (current) {
                 lessons.push(current);
             }
@@ -145,8 +126,29 @@ function getLessonParts(subject) {
                 subjectName: fullSubject,
                 initials: initials,
                 rooms: room ? [room] : [],
-                comment: [],
-                isCancelled: false
+                comment: []
+            };
+            if (extra) {
+                if (/^\d+[а-яА-Я]?$/i.test(extra) || ['акт зал', 'зал', 'библ'].includes(extra.toLowerCase())) {
+                    current.rooms.push(extra);
+                } else {
+                    current.comment.push(extra);
+                }
+            }
+        } else if (current) {
+            if (subjectStr) {
+                current.comment.push(subjectStr);
+            } else if (room) {
+                current.rooms.push(room);
+            } else {
+                current.comment.push(raw);
+            }
+        } else {
+            current = {
+                subjectName: fullSubject || subjectStr,
+                initials: initials,
+                rooms: room ? [room] : [],
+                comment: []
             };
         }
     }
@@ -207,7 +209,7 @@ async function fetchTeacherCabinetData() {
     const teacherCabinetMap = {};
     for (let i = 1; i < data.length; i++) {
         const [id, , initials, cabinetStr] = data[i];
-        const cabinets = cabinetStr ? cabinetStr.split(',').map(c => c.trim()) : [];
+        const cabinets = cabinetStr ? cabinetStr.split(',').map(c => c.trim().toLowerCase()) : [];
         if (id && (initials || cabinets.length > 0)) {
             teacherCabinetMap[id] = { initials, cabinets };
         }
@@ -352,49 +354,27 @@ async function loadSchedule() {
                 lessons.forEach((les, k) => {
                     const displayName = les.subjectName + (les.initials ? ` (${les.initials})` : '');
                     const commentHtml = les.comment.length > 0 ? `<br>${les.comment.join('<br>')}` : '';
-                    if (les.subjectName === 'Урок отменен') {
+                    les.rooms.forEach((room, m) => {
+                        const displayRoom = /^\d+$/.test(room) ? room + ' кабинет' : room;
                         html += `
-                            <div class="lesson-card no-lesson ${isCurrentLesson ? 'current-lesson' : ''}" style="--index: ${indexCounter}">
+                            <div class="lesson-card ${isCurrentLesson ? 'current-lesson' : ''}" style="--index: ${indexCounter}">
                                 ${lesson}<br>
-                                Урок отменен<br>
+                                ${displayName}<br>
+                                ${time}<br>
+                                ${displayRoom}${commentHtml}
+                            </div>
+                        `;
+                        indexCounter += 0.1; // Для анимации
+                    });
+                    if (les.rooms.length === 0) {
+                        html += `
+                            <div class="lesson-card ${isCurrentLesson ? 'current-lesson' : ''}" style="--index: ${indexCounter}">
+                                ${lesson}<br>
+                                ${displayName}<br>
                                 ${time}${commentHtml}
                             </div>
                         `;
                         indexCounter += 0.1;
-                    } else if (les.isCancelled) {
-                        const displayRooms = les.rooms.filter(r => r !== '---').map(r => /^\d+$/.test(r) ? r + ' кабинет' : r).join('<br>');
-                        html += `
-                            <div class="lesson-card no-lesson ${isCurrentLesson ? 'current-lesson' : ''}" style="--index: ${indexCounter}">
-                                ${lesson}<br>
-                                Урок ${displayName} отменен<br>
-                                ${time}<br>
-                                ${displayRooms}${commentHtml}
-                            </div>
-                        `;
-                        indexCounter += 0.1;
-                    } else {
-                        les.rooms.forEach((room, m) => {
-                            const displayRoom = /^\d+$/.test(room) ? room + ' кабинет' : room;
-                            html += `
-                                <div class="lesson-card ${isCurrentLesson ? 'current-lesson' : ''}" style="--index: ${indexCounter}">
-                                    ${lesson}<br>
-                                    ${displayName}<br>
-                                    ${time}<br>
-                                    ${displayRoom}${commentHtml}
-                                </div>
-                            `;
-                            indexCounter += 0.1; // Для анимации
-                        });
-                        if (les.rooms.length === 0) {
-                            html += `
-                                <div class="lesson-card ${isCurrentLesson ? 'current-lesson' : ''}" style="--index: ${indexCounter}">
-                                    ${lesson}<br>
-                                    ${displayName}<br>
-                                    ${time}${commentHtml}
-                                </div>
-                            `;
-                            indexCounter += 0.1;
-                        }
                     }
                 });
             }
@@ -438,7 +418,7 @@ async function loadSchedule() {
                     const displayName = les.subjectName + (les.initials ? ` (${les.initials})` : '');
                     const commentHtml = les.comment.length > 0 ? `<br>${les.comment.join('<br>')}` : '';
                     const isInitialsMatch = initials && les.initials === initials;
-                    const matchingRooms = les.rooms.filter(room => cabinets.length === 0 || cabinets.includes(room));
+                    const matchingRooms = les.rooms.filter(room => cabinets.includes(room.toLowerCase()));
                     if (isInitialsMatch && (matchingRooms.length > 0 || les.rooms.length === 0)) {
                         foundLessons = true;
                         if (matchingRooms.length > 0) {
