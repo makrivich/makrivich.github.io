@@ -62,7 +62,7 @@ const SUBJECT_FULL_NAMES = {
     'истор': 'История',
     'рус яз эл': 'Русский язык электив',
     'общ эл': 'Обществознание электив',
-    'инфор эл': 'Информатика электив',
+    'инфор эл': 'Информатика elekтив',
     'зан рус': 'Занимательный русский язык',
     'функ гр': 'Функциональная грамотность',
     'физ-ра': 'Физическая культура',
@@ -315,6 +315,17 @@ async function loadSchedule() {
             } else {
                 lessons.forEach((les, k) => {
                     const displayName = les.subjectName + (les.initials ? ` (${les.initials})` : '');
+                    les.rooms.forEach((room, m) => {
+                        html += `
+                            <div class="lesson-card ${isCurrentLesson ? 'current-lesson' : ''}" style="--index: ${indexCounter}">
+                                ${lesson}<br>
+                                ${displayName}<br>
+                                ${time}<br>
+                                ${room ? room + ' кабинет' : ''}
+                            </div>
+                        `;
+                        indexCounter += 0.1; // Для анимации
+                    });
                     if (les.rooms.length === 0) {
                         html += `
                             <div class="lesson-card ${isCurrentLesson ? 'current-lesson' : ''}" style="--index: ${indexCounter}">
@@ -324,18 +335,6 @@ async function loadSchedule() {
                             </div>
                         `;
                         indexCounter += 0.1;
-                    } else {
-                        les.rooms.forEach((room, m) => {
-                            html += `
-                                <div class="lesson-card ${isCurrentLesson ? 'current-lesson' : ''}" style="--index: ${indexCounter}">
-                                    ${lesson}<br>
-                                    ${displayName}<br>
-                                    ${time}<br>
-                                    ${room} кабинет
-                                </div>
-                            `;
-                            indexCounter += 0.1;
-                        });
                     }
                 });
             }
@@ -378,26 +377,33 @@ async function loadSchedule() {
                 lessons.forEach(les => {
                     const displayName = les.subjectName + (les.initials ? ` (${les.initials})` : '');
                     const isInitialsMatch = initials && les.initials === initials;
-                    let matchingRooms;
-                    if (les.rooms.length > 0) {
-                        matchingRooms = les.rooms.filter(room => !cabinet || room === cabinet);
-                    } else {
-                        matchingRooms = initials ? [''] : [];
-                    }
+                    const matchingRooms = les.rooms.filter(room => !cabinet || room === cabinet);
                     if (isInitialsMatch || matchingRooms.length > 0) {
                         foundLessons = true;
-                        matchingRooms.forEach(room => {
+                        if (matchingRooms.length > 0) {
+                            matchingRooms.forEach(room => {
+                                html += `
+                                    <div class="lesson-card ${isCurrentLesson ? 'current-lesson' : ''}" style="--index: ${indexCounter}">
+                                        ${lesson}<br>
+                                        ${displayName}<br>
+                                        ${time}<br>
+                                        ${headerRow[j]}<br>
+                                        ${room} кабинет
+                                    </div>
+                                `;
+                                indexCounter += 0.1;
+                            });
+                        } else {
                             html += `
                                 <div class="lesson-card ${isCurrentLesson ? 'current-lesson' : ''}" style="--index: ${indexCounter}">
                                     ${lesson}<br>
                                     ${displayName}<br>
                                     ${time}<br>
-                                    ${headerRow[j]}<br>
-                                    ${room ? room + ' кабинет' : ''}
+                                    ${headerRow[j]}
                                 </div>
                             `;
                             indexCounter += 0.1;
-                        });
+                        }
                     }
                 });
             }
