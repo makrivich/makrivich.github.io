@@ -69,6 +69,9 @@ const SUBJECT_FULL_NAMES = {
     'физра': 'Физическая культура'
 };
 
+// Известные кабинеты
+const KNOWN_ROOMS = ['зал', 'акт зал'];
+
 // Функция для парсинга строки урока на части
 function getLessonParts(subject) {
     if (subject === 'Нет урока') return [];
@@ -86,7 +89,7 @@ function getLessonParts(subject) {
         }
         const parts = raw.split(/\s+/);
         let room = parts.pop();
-        let hasRoom = /^\d+[а-яА-Я]?$/i.test(room);
+        let hasRoom = /^\d+[а-яА-Я]?$/i.test(room) || KNOWN_ROOMS.includes(room);
         if (!hasRoom) {
             parts.push(room);
             room = null;
@@ -107,23 +110,27 @@ function getLessonParts(subject) {
                 break;
             }
         }
-        if (!matched && subjectStr) {
-            console.warn(`Сокращение не найдено для предмета: ${subjectStr}`);
-        }
-        if (subjectStr) { // Новый урок
-            if (current) {
-                lessons.push(current);
+        if (subjectStr) { // Возможный новый урок или комментарий
+            if (matched) { // Если совпадает с предметом, новый урок
+                if (current) {
+                    lessons.push(current);
+                }
+                current = {
+                    subjectName: fullSubject,
+                    initials: initials,
+                    rooms: room ? [room] : [],
+                    comment: []
+                };
+            } else { // Не совпадает, считать комментарием
+                if (current) {
+                    current.comment.push(raw);
+                } else {
+                    // Если нет current, возможно, это комментарий или неизвестный предмет
+                    console.warn(`Неизвестный элемент без текущего урока: ${raw}`);
+                }
             }
-            current = {
-                subjectName: fullSubject,
-                initials: initials,
-                rooms: room ? [room] : [],
-                comment: []
-            };
         } else if (current && room) { // Дополнительный кабинет для текущего урока
             current.rooms.push(room);
-        } else if (current) { // Комментарий
-            current.comment.push(raw);
         }
     }
     if (current) {
