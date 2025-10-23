@@ -60,7 +60,7 @@ const SUBJECT_FULL_NAMES = {
     'труд': 'Труд',
     'музыка': 'Музыка',
     'истор': 'История',
-    'рус яз эл': 'Русский язык elekтив',
+    'рус яз эл': 'Русский язык электив',
     'общ эл': 'Обществознание elekтив',
     'инфор эл': 'Информатика elekтив',
     'зан рус': 'Занимательный русский язык',
@@ -68,6 +68,9 @@ const SUBJECT_FULL_NAMES = {
     'физ-ра': 'Физическая культура',
     'физра': 'Физическая культура'
 };
+
+// Специальные многословные кабинеты
+const SPECIAL_MULTI_WORD_ROOMS = ['акт зал'];
 
 // Функция для парсинга строки урока на части
 function getLessonParts(subject) {
@@ -78,19 +81,32 @@ function getLessonParts(subject) {
     for (let raw of rawParts) {
         if (raw === '---') {
             if (current) {
-                current.comment.push('Урок отменен');
+                current.rooms.push('---');
+                current.isCancelled = true;
             } else {
-                lessons.push({subjectName: 'Урок отменен', initials: '', rooms: [], comment: []});
+                lessons.push({subjectName: 'Урок отменен', initials: '', rooms: [], comment: [], isCancelled: true});
             }
             continue;
         }
         const parts = raw.split(/\s+/);
-        let room = parts.pop();
-        let hasRoom = /^\d+[а-яА-Я]?$/i.test(room);
-        if (!hasRoom) {
-            parts.push(room);
-            room = null;
+        let room = null;
+        let hasRoom = false;
+
+        // Проверка на многословный кабинет
+        let potentialRoom = parts.slice(-2).join(' ');
+        if (SPECIAL_MULTI_WORD_ROOMS.includes(potentialRoom)) {
+            room = potentialRoom;
+            hasRoom = true;
+            parts.splice(-2, 2);
+        } else {
+            potentialRoom = parts[parts.length - 1];
+            hasRoom = /^\d+[а-яА-Я]?$/i.test(potentialRoom) || ['зал', '---'].includes(potentialRoom);
+            if (hasRoom) {
+                room = potentialRoom;
+                parts.pop();
+            }
         }
+
         let subjectStr = parts.join(' ');
         let initials = '';
         const match = subjectStr.match(/(.*)\s*\((.*?)\)$/);
@@ -107,8 +123,19 @@ function getLessonParts(subject) {
                 break;
             }
         }
-        if (!matched && subjectStr) {
-            console.warn(`Сокращение не найдено для предмета: ${subjectStr}`);
+        if (subjectStr && !matched) {
+            if (current) {
+                current.comment.push(raw);
+                continue;
+            } else {
+                fullSubject = subjectStr;
+            }
+        } else if (!subjectStr && current && room) {
+            current.rooms.push(room);
+            continue;
+        } else if (!subjectStr && current) {
+            current.comment.push(raw);
+            continue;
         }
         if (subjectStr) { // Новый урок
             if (current) {
@@ -118,12 +145,9 @@ function getLessonParts(subject) {
                 subjectName: fullSubject,
                 initials: initials,
                 rooms: room ? [room] : [],
-                comment: []
+                comment: [],
+                isCancelled: false
             };
-        } else if (current && room) { // Дополнительный кабинет для текущего урока
-            current.rooms.push(room);
-        } else if (current) { // Комментарий
-            current.comment.push(raw);
         }
     }
     if (current) {
@@ -334,6 +358,17 @@ async function loadSchedule() {
                                 ${lesson}<br>
                                 Урок отменен<br>
                                 ${time}${commentHtml}
+                            </div>
+                        `;
+                        indexCounter += 0.1;
+                    } else if (les.isCancelled) {
+                        const displayRooms = les.rooms.filter(r => r !== '---').map(r => /^\d+$/.test(r) ? r + ' кабинет' : r).join('<br>');
+                        html += `
+                            <div class="lesson-card no-lesson ${isCurrentLesson ? 'current-lesson' : ''}" style="--index: ${indexCounter}">
+                                ${lesson}<br>
+                                Урок ${displayName} отменен<br>
+                                ${time}<br>
+                                ${displayRooms}${commentHtml}
                             </div>
                         `;
                         indexCounter += 0.1;
