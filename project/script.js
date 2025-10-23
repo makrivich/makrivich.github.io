@@ -90,7 +90,7 @@ function getLessonParts(subject) {
         let fullSubject = subjectStr;
         let matched = false;
         for (const key in SUBJECT_FULL_NAMES) {
-            if (subjectStr.toLowerCase().includes(key)) {
+            if (subjectStr.toLowerCase().includes(key.toLowerCase())) {
                 fullSubject = SUBJECT_FULL_NAMES[key];
                 matched = true;
                 break;
