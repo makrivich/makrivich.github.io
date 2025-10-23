@@ -63,7 +63,10 @@ const SUBJECT_FULL_NAMES = {
     'рус яз эл': 'Русский язык электив',
     'общ эл': 'Обществознание электив',
     'инфор эл': 'Информатика электив',
-    'зан рус': 'Занимательный русский язык'
+    'зан рус': 'Занимательный русский язык',
+    'функ гр': 'Функциональная грамотность',
+    'физ-ра': 'Физическая культура',
+    'физра': 'Физическая культура'
 };
 
 // Функция для парсинга строки урока на части
@@ -75,7 +78,7 @@ function getLessonParts(subject) {
     for (let raw of rawParts) {
         const parts = raw.split(/\s+/);
         let room = parts.pop();
-        let hasRoom = /^\d+$/.test(room);
+        let hasRoom = /^\d+[а-яА-Я]?$/i.test(room);
         if (!hasRoom) {
             parts.push(room);
             room = null;
@@ -312,17 +315,28 @@ async function loadSchedule() {
             } else {
                 lessons.forEach((les, k) => {
                     const displayName = les.subjectName + (les.initials ? ` (${les.initials})` : '');
-                    les.rooms.forEach((room, m) => {
+                    if (les.rooms.length === 0) {
                         html += `
                             <div class="lesson-card ${isCurrentLesson ? 'current-lesson' : ''}" style="--index: ${indexCounter}">
                                 ${lesson}<br>
                                 ${displayName}<br>
-                                ${time}<br>
-                                ${room} кабинет
+                                ${time}
                             </div>
                         `;
-                        indexCounter += 0.1; // Для анимации
-                    });
+                        indexCounter += 0.1;
+                    } else {
+                        les.rooms.forEach((room, m) => {
+                            html += `
+                                <div class="lesson-card ${isCurrentLesson ? 'current-lesson' : ''}" style="--index: ${indexCounter}">
+                                    ${lesson}<br>
+                                    ${displayName}<br>
+                                    ${time}<br>
+                                    ${room} кабинет
+                                </div>
+                            `;
+                            indexCounter += 0.1;
+                        });
+                    }
                 });
             }
         }
@@ -364,8 +378,13 @@ async function loadSchedule() {
                 lessons.forEach(les => {
                     const displayName = les.subjectName + (les.initials ? ` (${les.initials})` : '');
                     const isInitialsMatch = initials && les.initials === initials;
-                    const matchingRooms = les.rooms.filter(room => !cabinet || room === cabinet);
-                    if ((isInitialsMatch && matchingRooms.length > 0) || (!isInitialsMatch && matchingRooms.length > 0)) {
+                    let matchingRooms;
+                    if (les.rooms.length > 0) {
+                        matchingRooms = les.rooms.filter(room => !cabinet || room === cabinet);
+                    } else {
+                        matchingRooms = initials ? [''] : [];
+                    }
+                    if (isInitialsMatch || matchingRooms.length > 0) {
                         foundLessons = true;
                         matchingRooms.forEach(room => {
                             html += `
@@ -374,7 +393,7 @@ async function loadSchedule() {
                                     ${displayName}<br>
                                     ${time}<br>
                                     ${headerRow[j]}<br>
-                                    ${room} кабинет
+                                    ${room ? room + ' кабинет' : ''}
                                 </div>
                             `;
                             indexCounter += 0.1;
