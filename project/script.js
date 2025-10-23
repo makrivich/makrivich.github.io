@@ -69,12 +69,10 @@ const SUBJECT_FULL_NAMES = {
 // Функция для парсинга строки урока на части
 function getLessonParts(subject) {
     if (subject === 'Нет урока') return [];
-    const rawParts = subject.split('/');
+    const rawParts = subject.split(/\/|\n/).map(part => part.trim()).filter(part => part);
     const lessons = [];
     let current = null;
     for (let raw of rawParts) {
-        raw = raw.trim();
-        if (!raw) continue;
         const parts = raw.split(/\s+/);
         let room = parts.pop();
         let hasRoom = /^\d+$/.test(room);
@@ -127,6 +125,7 @@ async function fetchSchedule(url) {
             throw new Error('Не удалось загрузить данные: ' + response.status);
         }
         const text = await response.text();
+        console.log('Raw CSV:', text);
         const data = parseCSV(text);
         return data;
     } catch (error) {
