@@ -76,6 +76,10 @@ function getLessonParts(subject) {
     const lessons = [];
     let current = null;
     for (let raw of rawParts) {
+        if (raw === '---') {
+            lessons.push({subjectName: 'Урок отменен', initials: '', rooms: []});
+            continue;
+        }
         const parts = raw.split(/\s+/);
         let room = parts.pop();
         let hasRoom = /^\d+[а-яА-Я]?$/i.test(room);
@@ -315,26 +319,38 @@ async function loadSchedule() {
             } else {
                 lessons.forEach((les, k) => {
                     const displayName = les.subjectName + (les.initials ? ` (${les.initials})` : '');
-                    les.rooms.forEach((room, m) => {
+                    if (les.subjectName === 'Урок отменен') {
                         html += `
-                            <div class="lesson-card ${isCurrentLesson ? 'current-lesson' : ''}" style="--index: ${indexCounter}">
+                            <div class="lesson-card no-lesson ${isCurrentLesson ? 'current-lesson' : ''}" style="--index: ${indexCounter}">
                                 ${lesson}<br>
-                                ${displayName}<br>
-                                ${time}<br>
-                                ${room ? room + ' кабинет' : ''}
-                            </div>
-                        `;
-                        indexCounter += 0.1; // Для анимации
-                    });
-                    if (les.rooms.length === 0) {
-                        html += `
-                            <div class="lesson-card ${isCurrentLesson ? 'current-lesson' : ''}" style="--index: ${indexCounter}">
-                                ${lesson}<br>
-                                ${displayName}<br>
+                                Урок отменен<br>
                                 ${time}
                             </div>
                         `;
                         indexCounter += 0.1;
+                    } else {
+                        les.rooms.forEach((room, m) => {
+                            const displayRoom = /^\d+$/.test(room) ? room + ' кабинет' : room;
+                            html += `
+                                <div class="lesson-card ${isCurrentLesson ? 'current-lesson' : ''}" style="--index: ${indexCounter}">
+                                    ${lesson}<br>
+                                    ${displayName}<br>
+                                    ${time}<br>
+                                    ${displayRoom}
+                                </div>
+                            `;
+                            indexCounter += 0.1; // Для анимации
+                        });
+                        if (les.rooms.length === 0) {
+                            html += `
+                                <div class="lesson-card ${isCurrentLesson ? 'current-lesson' : ''}" style="--index: ${indexCounter}">
+                                    ${lesson}<br>
+                                    ${displayName}<br>
+                                    ${time}
+                                </div>
+                            `;
+                            indexCounter += 0.1;
+                        }
                     }
                 });
             }
@@ -378,17 +394,18 @@ async function loadSchedule() {
                     const displayName = les.subjectName + (les.initials ? ` (${les.initials})` : '');
                     const isInitialsMatch = initials && les.initials === initials;
                     const matchingRooms = les.rooms.filter(room => !cabinet || room === cabinet);
-                    if (isInitialsMatch || matchingRooms.length > 0) {
+                    if (isInitialsMatch && (matchingRooms.length > 0 || les.rooms.length === 0)) {
                         foundLessons = true;
                         if (matchingRooms.length > 0) {
                             matchingRooms.forEach(room => {
+                                const displayRoom = /^\d+$/.test(room) ? room + ' кабинет' : room;
                                 html += `
                                     <div class="lesson-card ${isCurrentLesson ? 'current-lesson' : ''}" style="--index: ${indexCounter}">
                                         ${lesson}<br>
                                         ${displayName}<br>
                                         ${time}<br>
                                         ${headerRow[j]}<br>
-                                        ${room} кабинет
+                                        ${displayRoom}
                                     </div>
                                 `;
                                 indexCounter += 0.1;
@@ -404,6 +421,21 @@ async function loadSchedule() {
                             `;
                             indexCounter += 0.1;
                         }
+                    } else if (!isInitialsMatch && matchingRooms.length > 0) {
+                        foundLessons = true;
+                        matchingRooms.forEach(room => {
+                            const displayRoom = /^\d+$/.test(room) ? room + ' кабинет' : room;
+                            html += `
+                                <div class="lesson-card ${isCurrentLesson ? 'current-lesson' : ''}" style="--index: ${indexCounter}">
+                                    ${lesson}<br>
+                                    ${displayName}<br>
+                                    ${time}<br>
+                                    ${headerRow[j]}<br>
+                                    ${displayRoom}
+                                </div>
+                            `;
+                            indexCounter += 0.1;
+                        });
                     }
                 });
             }
