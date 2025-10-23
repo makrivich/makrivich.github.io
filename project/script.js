@@ -78,11 +78,9 @@ function getLessonParts(subject) {
     for (let raw of rawParts) {
         if (raw === '---') {
             if (current) {
-                lessons.push(current);
-                lessons.push({subjectName: current.subjectName + ' отменен', initials: '', rooms: [], comment: []});
-                current = null;
+                current.onlyCertainRooms = true;
             } else {
-                lessons.push({subjectName: 'Урок отменен', initials: '', rooms: [], comment: []});
+                lessons.push({subjectName: 'Урок отменен', initials: '', rooms: [], comment: [], onlyCertainRooms: false});
             }
             continue;
         }
@@ -126,7 +124,8 @@ function getLessonParts(subject) {
                 subjectName: fullSubject,
                 initials: initials,
                 rooms: room ? [room] : [],
-                comment: []
+                comment: [],
+                onlyCertainRooms: false
             };
             if (extra) {
                 if (/^\d+[а-яА-Я]?$/i.test(extra) || ['акт зал', 'зал', 'библ'].includes(extra.toLowerCase())) {
@@ -148,7 +147,8 @@ function getLessonParts(subject) {
                 subjectName: fullSubject || subjectStr,
                 initials: initials,
                 rooms: room ? [room] : [],
-                comment: []
+                comment: [],
+                onlyCertainRooms: false
             };
         }
     }
@@ -354,8 +354,10 @@ async function loadSchedule() {
                 lessons.forEach((les, k) => {
                     const displayName = les.subjectName + (les.initials ? ` (${les.initials})` : '');
                     const commentHtml = les.comment.length > 0 ? `<br>${les.comment.join('<br>')}` : '';
+                    const prefix = les.onlyCertainRooms ? 'только ' : '';
                     les.rooms.forEach((room, m) => {
-                        const displayRoom = /^\d+$/.test(room) ? room + ' кабинет' : room;
+                        const baseDisplayRoom = /^\d+$/.test(room) ? room + ' кабинет' : room;
+                        const displayRoom = prefix + baseDisplayRoom;
                         html += `
                             <div class="lesson-card ${isCurrentLesson ? 'current-lesson' : ''}" style="--index: ${indexCounter}">
                                 ${lesson}<br>
@@ -417,13 +419,15 @@ async function loadSchedule() {
                 lessons.forEach(les => {
                     const displayName = les.subjectName + (les.initials ? ` (${les.initials})` : '');
                     const commentHtml = les.comment.length > 0 ? `<br>${les.comment.join('<br>')}` : '';
+                    const prefix = les.onlyCertainRooms ? 'только ' : '';
                     const isInitialsMatch = initials && les.initials === initials;
                     const matchingRooms = les.rooms.filter(room => cabinets.includes(room.toLowerCase()));
                     if (isInitialsMatch && (matchingRooms.length > 0 || les.rooms.length === 0)) {
                         foundLessons = true;
                         if (matchingRooms.length > 0) {
                             matchingRooms.forEach(room => {
-                                const displayRoom = /^\d+$/.test(room) ? room + ' кабинет' : room;
+                                const baseDisplayRoom = /^\d+$/.test(room) ? room + ' кабинет' : room;
+                                const displayRoom = prefix + baseDisplayRoom;
                                 html += `
                                     <div class="lesson-card ${isCurrentLesson ? 'current-lesson' : ''}" style="--index: ${indexCounter}">
                                         ${lesson}<br>
@@ -449,7 +453,8 @@ async function loadSchedule() {
                     } else if (!isInitialsMatch && matchingRooms.length > 0) {
                         foundLessons = true;
                         matchingRooms.forEach(room => {
-                            const displayRoom = /^\d+$/.test(room) ? room + ' кабинет' : room;
+                            const baseDisplayRoom = /^\d+$/.test(room) ? room + ' кабинет' : room;
+                            const displayRoom = prefix + baseDisplayRoom;
                             html += `
                                 <div class="lesson-card ${isCurrentLesson ? 'current-lesson' : ''}" style="--index: ${indexCounter}">
                                     ${lesson}<br>
