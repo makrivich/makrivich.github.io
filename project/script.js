@@ -60,8 +60,8 @@ const SUBJECT_FULL_NAMES = {
     'труд': 'Труд',
     'музыка': 'Музыка',
     'истор': 'История',
-    'рус яз эл': 'Русский язык электив',
-    'общ эл': 'Обществознание электив',
+    'рус яз эл': 'Русский язык elekтив',
+    'общ эл': 'Обществознание elekтив',
     'инфор эл': 'Информатика elekтив',
     'зан рус': 'Занимательный русский язык',
     'функ гр': 'Функциональная грамотность',
@@ -77,7 +77,11 @@ function getLessonParts(subject) {
     let current = null;
     for (let raw of rawParts) {
         if (raw === '---') {
-            lessons.push({subjectName: 'Урок отменен', initials: '', rooms: []});
+            if (current) {
+                current.comment.push('Урок отменен');
+            } else {
+                lessons.push({subjectName: 'Урок отменен', initials: '', rooms: [], comment: []});
+            }
             continue;
         }
         const parts = raw.split(/\s+/);
@@ -113,10 +117,13 @@ function getLessonParts(subject) {
             current = {
                 subjectName: fullSubject,
                 initials: initials,
-                rooms: room ? [room] : []
+                rooms: room ? [room] : [],
+                comment: []
             };
         } else if (current && room) { // Дополнительный кабинет для текущего урока
             current.rooms.push(room);
+        } else if (current) { // Комментарий
+            current.comment.push(raw);
         }
     }
     if (current) {
@@ -175,9 +182,10 @@ async function fetchTeacherCabinetData() {
     if (!data) return null;
     const teacherCabinetMap = {};
     for (let i = 1; i < data.length; i++) {
-        const [id, , initials, cabinet] = data[i];
-        if (id && (initials || cabinet)) {
-            teacherCabinetMap[id] = { initials, cabinet };
+        const [id, , initials, cabinetStr] = data[i];
+        const cabinets = cabinetStr ? cabinetStr.split(',').map(c => c.trim()) : [];
+        if (id && (initials || cabinets.length > 0)) {
+            teacherCabinetMap[id] = { initials, cabinets };
         }
     }
     return teacherCabinetMap;
@@ -319,12 +327,13 @@ async function loadSchedule() {
             } else {
                 lessons.forEach((les, k) => {
                     const displayName = les.subjectName + (les.initials ? ` (${les.initials})` : '');
+                    const commentHtml = les.comment.length > 0 ? `<br>${les.comment.join('<br>')}` : '';
                     if (les.subjectName === 'Урок отменен') {
                         html += `
                             <div class="lesson-card no-lesson ${isCurrentLesson ? 'current-lesson' : ''}" style="--index: ${indexCounter}">
                                 ${lesson}<br>
                                 Урок отменен<br>
-                                ${time}
+                                ${time}${commentHtml}
                             </div>
                         `;
                         indexCounter += 0.1;
@@ -336,7 +345,7 @@ async function loadSchedule() {
                                     ${lesson}<br>
                                     ${displayName}<br>
                                     ${time}<br>
-                                    ${displayRoom}
+                                    ${displayRoom}${commentHtml}
                                 </div>
                             `;
                             indexCounter += 0.1; // Для анимации
@@ -346,7 +355,7 @@ async function loadSchedule() {
                                 <div class="lesson-card ${isCurrentLesson ? 'current-lesson' : ''}" style="--index: ${indexCounter}">
                                     ${lesson}<br>
                                     ${displayName}<br>
-                                    ${time}
+                                    ${time}${commentHtml}
                                 </div>
                             `;
                             indexCounter += 0.1;
@@ -363,7 +372,7 @@ async function loadSchedule() {
             return;
         }
 
-        const { initials, cabinet } = teacherCabinetData[selectedId];
+        const { initials, cabinets } = teacherCabinetData[selectedId];
         let foundLessons = false;
 
         for (let i = 1; i < data.length; i++) {
@@ -392,8 +401,9 @@ async function loadSchedule() {
                 const lessons = getLessonParts(cell);
                 lessons.forEach(les => {
                     const displayName = les.subjectName + (les.initials ? ` (${les.initials})` : '');
+                    const commentHtml = les.comment.length > 0 ? `<br>${les.comment.join('<br>')}` : '';
                     const isInitialsMatch = initials && les.initials === initials;
-                    const matchingRooms = les.rooms.filter(room => !cabinet || room === cabinet);
+                    const matchingRooms = les.rooms.filter(room => cabinets.length === 0 || cabinets.includes(room));
                     if (isInitialsMatch && (matchingRooms.length > 0 || les.rooms.length === 0)) {
                         foundLessons = true;
                         if (matchingRooms.length > 0) {
@@ -405,7 +415,7 @@ async function loadSchedule() {
                                         ${displayName}<br>
                                         ${time}<br>
                                         ${headerRow[j]}<br>
-                                        ${displayRoom}
+                                        ${displayRoom}${commentHtml}
                                     </div>
                                 `;
                                 indexCounter += 0.1;
@@ -416,7 +426,7 @@ async function loadSchedule() {
                                     ${lesson}<br>
                                     ${displayName}<br>
                                     ${time}<br>
-                                    ${headerRow[j]}
+                                    ${headerRow[j]}${commentHtml}
                                 </div>
                             `;
                             indexCounter += 0.1;
@@ -431,7 +441,7 @@ async function loadSchedule() {
                                     ${displayName}<br>
                                     ${time}<br>
                                     ${headerRow[j]}<br>
-                                    ${displayRoom}
+                                    ${displayRoom}${commentHtml}
                                 </div>
                             `;
                             indexCounter += 0.1;
