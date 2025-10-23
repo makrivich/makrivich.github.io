@@ -101,7 +101,8 @@ function getLessonParts(subject) {
         let fullSubject = subjectStr;
         let matched = false;
         let usedKey = '';
-        for (const key in SUBJECT_FULL_NAMES) {
+        const keys = Object.keys(SUBJECT_FULL_NAMES).sort((a, b) => b.length - a.length);
+        for (const key of keys) {
             if (subjectStr.toLowerCase().includes(key.toLowerCase())) {
                 fullSubject = SUBJECT_FULL_NAMES[key];
                 matched = true;
@@ -111,7 +112,7 @@ function getLessonParts(subject) {
         }
         let extra = '';
         if (matched) {
-            extra = subjectStr.toLowerCase().replace(usedKey, '').trim();
+            extra = subjectStr.toLowerCase().replace(usedKey.toLowerCase(), '').trim();
         }
         if (!matched && subjectStr) {
             console.warn(`Сокращение не найдено для предмета: ${subjectStr}`);
