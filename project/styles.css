@@ -1,103 +1,300 @@
-/* ====================== БАЗОВЫЕ СТИЛИ ====================== */
 body {
     font-family: Arial, sans-serif;
     margin: 0;
     padding: 20px;
     padding-top: 80px;
-    min-height: 100vh;
-    transition: background 0.5s, color 0.5s;
+    background-color: #e6f4e6;
+    background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.5), rgba(230, 244, 230, 1));
+    transition: background-color 0.3s, color 0.3s;
 }
 
-/* ====================== СВЕТЛАЯ НОВОГОДНЯЯ ТЕМА ====================== */
-body.light-newyear {
-    background: linear-gradient(135deg, #e0f7fa, #b2ebf2);
+h1, h2, h3 {
+    text-align: center;
+    color: #2e7d32;
+    transition: color 0.3s;
+    font-family: 'Georgia', serif;
+}
+
+.schedule-container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.lesson-card {
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 10px;
     color: #333;
+    font-size: 16px;
+    line-height: 1.5;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    opacity: 0;
+    animation: fadeIn 0.5s ease forwards;
+    animation-delay: calc(var(--index) * 0.1s);
+    transition: box-shadow 0.3s;
+    position: relative;
+    border-left: 4px solid #a5d6a7;
+    background-color: #ffffff;
 }
 
-.light-newyear .header { background: #c62828; color: #fff; }
-.light-newyear h1, .light-newyear h2, .light-newyear h3 { color: #006400; }
-.light-newyear .lesson-card {
-    background: #fff;
-    border-left: 5px solid #c62828;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
-.light-newyear .current-lesson { border: 2px solid #006400; background: rgba(0,100,0,0.15); }
-.light-newyear .menu-button { background: #006400; }
-.light-newyear .menu-button:hover { background: #004d00; }
-.light-newyear .theme-button { background: #c62828; }
 
-/* ====================== ТЁМНАЯ НОВОГОДНЯЯ ТЕМА ====================== */
-body.dark-newyear {
-    background: #0f2027;
-    background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+.current-lesson {
+    border: 2px solid #4CAF50;
+    background-color: rgba(76, 175, 80, 0.1);
+}
+
+.no-lesson {
+    color: #888;
+    font-style: italic;
+}
+
+.error {
+    color: #d32f2f;
+    text-align: center;
+}
+
+.info {
+    text-align: center;
+    color: #555;
+    margin-bottom: 20px;
+    transition: color 0.3s;
+}
+
+.loading {
+    text-align: center;
+    color: #555;
+    font-style: italic;
+    margin: 20px 0;
+}
+
+/* Фиксированный хедер */
+.header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background-color: #e6f4e6;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    padding: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    z-index: 1000;
+    transition: background-color 0.3s;
+}
+
+.header .info {
+    margin: 0;
+    font-size: 14px;
+}
+
+/* Стили для выпадающих списков и поля ввода */
+.selection-container {
+    max-width: 800px;
+    margin: 20px auto;
+    text-align: center;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 15px;
+}
+
+.selection-container label {
+    font-size: 16px;
+    color: #2e7d32;
+}
+
+.selection-container select, .selection-container input {
+    padding: 8px;
+    font-size: 16px;
+    border-radius: 5px;
+    border: 1px solid #a5d6a7;
+    background-color: #fff;
+    cursor: pointer;
+    transition: border-color 0.3s;
+}
+
+.selection-container input {
+    width: 100px;
+}
+
+.selection-container select:focus, .selection-container input:focus {
+    outline: none;
+    border-color: #4CAF50;
+}
+
+/* Стили для кнопок */
+.countdown-container {
+    max-width: 800px;
+    margin: 20px auto;
+    text-align: center;
+}
+
+.menu-button, .theme-button {
+    padding: 10px 20px;
+    font-size: 16px;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin: 5px;
+    transition: background-color 0.3s;
+}
+
+.menu-button {
+    background-color: #42a5f5;
+}
+
+.menu-button:hover {
+    background-color: #2196f3;
+}
+
+.theme-button {
+    background-color: #78909c;
+}
+
+.theme-button:hover {
+    background-color: #607d8b;
+}
+
+/* Стили для футера */
+.footer {
+    text-align: center;
+    margin-top: 20px;
+    color: #666;
+    font-size: 14px;
+}
+
+.dark-theme .footer {
+    color: #aaa;
+}
+
+/* Темная тема */
+.dark-theme {
+    background-color: #263238;
+    background-image: none;
     color: #e0e0e0;
 }
 
-.dark-newyear .header { background: #b71c1c; color: #fff; }
-.dark-newyear h1, .dark-newyear h2, .dark-newyear h3 { color: #00c853; }
-.dark-newyear .lesson-card {
-    background: #1e3a4d;
-    border-left: 5px solid #00c853;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-}
-.dark-newyear .current-lesson { border: 2px solid #00ff6c; background: rgba(0,255,108,0.15); }
-.dark-newyear .menu-button { background: #00c853; }
-.dark-newyear .menu-button:hover { background: #00b347; }
-.dark-newyear .theme-button { background: #b71c1c; }
-
-/* ====================== ОБЩИЕ ЭЛЕМЕНТЫ ====================== */
-.header {
-    position: fixed;
-    top: 0; left: 0; right: 0;
-    padding: 12px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 20px;
-    z-index: 1000;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+.dark-theme .header {
+    background-color: #263238;
 }
 
-.selection-container, .countdown-container { max-width: 800px; margin: 20px auto; text-align: center; }
-.lesson-card { padding: 15px; margin: 12px 0; border-radius: 12px; position: relative; }
-.lesson-card::before { content: "Tree"; position: absolute; top: -8px; left: -8px; font-size: 24px; }
-
-.menu-button, .theme-button {
-    padding: 12px 24px;
-    border: none;
-    border-radius: 8px;
-    color: #fff;
-    cursor: pointer;
-    font-size: 16px;
-    transition: 0.3s;
+.dark-theme h1, .dark-theme h2, .dark-theme h3 {
+    color: #e0e0e0;
 }
 
-/* ====================== ПАДАЮЩИЙ СНЕГ ====================== */
-.snowflakes {
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    pointer-events: none;
-    z-index: 9999;
+.dark-theme .info {
+    color: #cccccc;
 }
-.snowflake {
-    position: absolute;
-    color: #fff;
-    font-size: 1.4em;
-    animation: fall linear infinite;
-    opacity: 0.9;
+
+.dark-theme .loading {
+    color: #cccccc;
 }
-@keyframes fall {
-    to { transform: translateY(100vh) rotate(360deg); }
+
+.dark-theme .lesson-card {
+    box-shadow: 0 2px 5px rgba(255, 255, 255, 0.1);
+    border-left: 4px solid #4CAF50;
+    background-color: #37474f;
+    color: #e0e0e0;
 }
-.snowflake:nth-child(1)  { left: 10%; animation-duration: 12s; animation-delay: 0s; }
-.snowflake:nth-child(2)  { left: 20%; animation-duration: 15s; animation-delay: 2s; }
-.snowflake:nth-child(3)  { left: 30%; animation-duration: 10s; animation-delay: 4s; }
-.snowflake:nth-child(4)  { left: 40%; animation-duration: 18s; animation-delay: 1s; }
-.snowflake:nth-child(5)  { left: 50%; animation-duration: 13s; animation-delay: 6s; }
-.snowflake:nth-child(6)  { left: 60%; animation-duration: 14s; animation-delay: 3s; }
-.snowflake:nth-child(7)  { left: 70%; animation-duration: 16s; animation-delay: 8s; }
-.snowflake:nth-child(7)  { left: 80%; animation-duration: 11s; animation-delay: 5s; }
-.snowflake:nth-child(9)  { left: 90%; animation-duration: 17s; animation-delay: 7s; }
-.snowflake:nth-child(10) { left: 95%; animation-duration: 13s; animation-delay: 9s; }
-.snowflake:nth-child(11) { left: 15%; animation-duration: 14s; animation-delay: 1s; }
-.snowflake:nth-child(12) { left: 85%; animation-duration: 16s; animation-delay: 4s; }
+
+.dark-theme .selection-container label {
+    color: #e0e0e0;
+}
+
+.dark-theme .selection-container select, .dark-theme .selection-container input {
+    background-color: #37474f;
+    color: #e0e0e0;
+    border-color: #4CAF50;
+}
+
+/* Светлая (весенняя) тема */
+.light-theme {
+    background-color: #e6f4e6;
+    background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.5), rgba(230, 244, 230, 1));
+    color: #333;
+}
+
+.light-theme .header {
+    background-color: #e6f4e6;
+}
+
+.light-theme h1, .light-theme h2, .light-theme h3 {
+    color: #2e7d32;
+}
+
+.light-theme .info {
+    color: #555;
+}
+
+.light-theme .lesson-card {
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    border-left: 4px solid #a5d6a7;
+    background-color: #ffffff;
+}
+
+.light-theme .selection-container label {
+    color: #2e7d32;
+}
+
+.light-theme .selection-container select, .light-theme .selection-container input {
+    background-color: #fff;
+    color: #333;
+    border-color: #a5d6a7;
+}
+
+/* Поддержка системной темы */
+@media (prefers-color-scheme: dark) {
+    body:not(.light-theme):not(.dark-theme) {
+        background-color: #263238;
+        background-image: none;
+        color: #e0e0e0;
+    }
+
+    body:not(.light-theme):not(.dark-theme) .header {
+        background-color: #263238;
+    }
+
+    body:not(.light-theme):not(.dark-theme) h1,
+    body:not(.light-theme):not(.dark-theme) h2,
+    body:not(.light-theme):not(.dark-theme) h3 {
+        color: #e0e0e0;
+    }
+
+    body:not(.light-theme):not(.dark-theme) .info {
+        color: #cccccc;
+    }
+
+    body:not(.light-theme):not(.dark-theme) .loading {
+        color: #cccccc;
+    }
+
+    body:not(.light-theme):not(.dark-theme) .lesson-card {
+        box-shadow: 0 2px 5px rgba(255, 255, 255, 0.1);
+        border-left: 4px solid #4CAF50;
+        background-color: #37474f;
+        color: #e0e0e0;
+    }
+
+    body:not(.light-theme):not(.dark-theme) .footer {
+        color: #aaa;
+    }
+
+    body:not(.light-theme):not(.dark-theme) .selection-container label {
+        color: #e0e0e0;
+    }
+
+    body:not(.light-theme):not(.dark-theme) .selection-container select,
+    body:not(.light-theme):not(.dark-theme) .selection-container input {
+        background-color: #37474f;
+        color: #e0e0e0;
+        border-color: #4CAF50;
+    }
+}
