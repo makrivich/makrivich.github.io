@@ -2,32 +2,38 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport וב="width=device-width, initial-scale=1.0">
     <title>Расписание</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+
     <div class="header">
         <div id="current-time" class="info"></div>
-        <button class="theme-button" onclick="toggleTheme()" id="theme-button">⚙️</button>
+        <button class="theme-button" onclick="toggleTheme()" id="theme-button">Toggle</button>
     </div>
+
     <h1>Расписание</h1>
+
     <div class="selection-container">
         <label for="mode-select">Режим:</label>
         <select id="mode-select" onchange="toggleMode()">
             <option value="class" selected>По классу</option>
             <option value="id">По ID</option>
         </select>
+
         <div id="class-selection">
             <label for="class-select">Выберите класс:</label>
             <select id="class-select" onchange="loadSchedule()">
                 <option value="" disabled selected>Выберите класс</option>
             </select>
         </div>
+
         <div id="id-selection" style="display: none;">
             <label for="id-input">ID:</label>
             <input id="id-input" type="text" oninput="loadSchedule()" />
         </div>
+
         <label for="day-select">Выберите день:</label>
         <select id="day-select" onchange="loadSchedule()">
             <option value="Понедельник">Понедельник</option>
@@ -38,12 +44,32 @@
             <option value="Суббота">Суббота</option>
         </select>
     </div>
-    <div id="schedule-container" class="schedule-container"><p class="info">Выберите режим, класс/ID и день недели</p></div>
+
+    <div id="schedule-container" class="schedule-container">
+        <p class="info">Выберите режим, класс/ID и день недели</p>
+    </div>
+
     <div class="countdown-container">
         <button class="menu-button" onclick="openMenu()">Открыть меню столовой</button>
         <div class="footer">
-            by Makrivich 2025<br>ver. r3.2
+            by Makrivich 2025<br>ver. r3.2.ny
         </div>
+    </div>
+
+    <!-- Падающий снег -->
+    <div class="snowflakes" aria-hidden="true">
+        <div class="snowflake">Snowflake</div>
+        <div class="snowflake">Snowflake</div>
+        <div class="snowflake">Snowflake</div>
+        <div class="snowflake">Snowflake</div>
+        <div class="snowflake">Snowflake</div>
+        <div class="snowflake">Snowflake</div>
+        <div class="snowflake">Snowflake</div>
+        <div class="snowflake">Snowflake</div>
+        <div class="snowflake">Snowflake</div>
+        <div class="snowflake">Snowflake</div>
+        <div class="snowflake">Snowflake</div>
+        <div class="snowflake">Snowflake</div>
     </div>
 
     <script src="script.js"></script>
