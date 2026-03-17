@@ -493,14 +493,14 @@ async function loadSchedule() {
 
 function toggleMode() {
     const modeSelect = document.getElementById('mode-select');
-    const classSelection = document.getElementById('class-selection');
+    const classSelect = document.getElementById('class-select');
     const idSelection = document.getElementById('id-selection');
 
     if (modeSelect.value === 'class') {
-        classSelection.style.display = 'block';
+        classSelect.style.display = 'inline-block';
         idSelection.style.display = 'none';
     } else {
-        classSelection.style.display = 'none';
+        classSelect.style.display = 'none';
         idSelection.style.display = 'block';
     }
     loadSchedule();
