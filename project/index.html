@@ -18,16 +18,10 @@
             <option value="class" selected>По классу</option>
             <option value="id">По ID</option>
         </select>
-        <div id="class-selection">
-            <label for="class-select">Выберите класс:</label>
-            <select id="class-select" onchange="loadSchedule()">
-                <option value="" disabled selected>Выберите класс</option>
-            </select>
-        </div>
-        <div id="id-selection" style="display: none;">
-            <label for="id-input">ID:</label>
-            <input id="id-input" type="text" oninput="loadSchedule()" />
-        </div>
+        <label for="class-select">Выберите класс:</label>
+        <select id="class-select" onchange="loadSchedule()">
+            <option value="" disabled selected>Выберите класс</option>
+        </select>
         <label for="day-select">Выберите день:</label>
         <select id="day-select" onchange="loadSchedule()">
             <option value="Понедельник">Понедельник</option>
@@ -37,6 +31,10 @@
             <option value="Пятница">Пятница</option>
             <option value="Суббота">Суббота</option>
         </select>
+    </div>
+    <div id="id-selection" style="display: none;">
+        <label for="id-input">ID:</label>
+        <input id="id-input" type="text" oninput="loadSchedule()" />
     </div>
     <div id="schedule-container" class="schedule-container"><p class="info">Выберите режим, класс/ID и день недели</p></div>
     <div class="countdown-container">
