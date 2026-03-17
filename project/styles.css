@@ -3,14 +3,14 @@ body {
     margin: 0;
     padding: 20px;
     padding-top: 100px;
-    background: linear-gradient(135deg, #e8eaf6 0%, #c5cae9 100%);
+    background: linear-gradient(135deg, #f5f7fa 0%, #e4e8eb 100%);
     min-height: 100vh;
     transition: background 0.5s ease, color 0.3s ease;
 }
 
 .light-theme {
-    background: linear-gradient(135deg, #e8eaf6 0%, #c5cae9 100%);
-    color: #424242;
+    background: linear-gradient(135deg, #f5f7fa 0%, #e4e8eb 100%);
+    color: #555555;
 }
 
 .dark-theme {
@@ -20,7 +20,7 @@ body {
     
 h1, h2, h3 {
     text-align: center;
-    background: linear-gradient(45deg, #5c6bc0, #7986cb);
+    background: linear-gradient(45deg, #7a8ba3, #9aabbc);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -32,7 +32,7 @@ h1, h2, h3 {
 }
 
 .light-theme h1, .light-theme h2, .light-theme h3 {
-    background: linear-gradient(45deg, #5c6bc0, #7986cb);
+    background: linear-gradient(45deg, #7a8ba3, #9aabbc);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -57,7 +57,7 @@ h1, h2, h3 {
     animation-delay: calc(var(--index) * 0.1s);
     transition: all 0.3s ease;
     position: relative;
-    border-left: 5px solid #667eea;
+    border-left: 5px solid #9aabbc;
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.2);
@@ -75,9 +75,9 @@ h1, h2, h3 {
 }
     
 .current-lesson {
-    border: 3px solid #667eea;
-    background: rgba(102, 126, 234, 0.15);
-    box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+    border: 3px solid #9aabbc;
+    background: rgba(154, 171, 188, 0.15);
+    box-shadow: 0 8px 32px rgba(154, 171, 188, 0.3);
     transform: scale(1.02);
     animation: pulse 2s infinite;
 }
@@ -99,7 +99,7 @@ h1, h2, h3 {
     
 .info {
     text-align: center;
-    color: rgba(92, 107, 192, 0.9);
+    color: rgba(122, 139, 163, 0.9);
     margin-bottom: 20px;
     transition: color 0.3s ease;
     font-size: 15px;
@@ -107,11 +107,11 @@ h1, h2, h3 {
 
 .loading {
     text-align: center;
-    color: rgba(92, 107, 192, 0.9);
+    color: rgba(122, 139, 163, 0.9);
     font-style: italic;
     margin: 20px 0;
     padding: 30px;
-    background: rgba(92, 107, 192, 0.1);
+    background: rgba(122, 139, 163, 0.1);
     border-radius: 12px;
 }
     
@@ -157,7 +157,7 @@ h1, h2, h3 {
     margin: 30px auto;
     text-align: center;
     display: grid;
-    grid-template-columns: auto 1fr;
+    grid-template-columns: repeat(2, max-content);
     gap: 15px 20px;
     justify-content: center;
     align-items: center;
@@ -176,12 +176,13 @@ h1, h2, h3 {
 
 .selection-container label {
     font-size: 15px;
-    color: #555;
+    color: #666;
     font-weight: 600;
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    min-width: 120px;
+    min-width: 140px;
+    text-align: right;
 }
 
 .dark-theme .selection-container label {
@@ -213,13 +214,13 @@ h1, h2, h3 {
 
 .selection-container select:focus, .selection-container input:focus {
     outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+    border-color: #9aabbc;
+    box-shadow: 0 0 0 3px rgba(154, 171, 188, 0.2);
     transform: scale(1.02);
 }
 
 .selection-container select:hover, .selection-container input:hover {
-    border-color: #667eea;
+    border-color: #9aabbc;
 }
 
 /* Стили для кнопок */
@@ -263,13 +264,13 @@ h1, h2, h3 {
 }
 
 .menu-button {
-    background: linear-gradient(45deg, #7986cb, #5c6bc0);
+    background: linear-gradient(45deg, #9aabbc, #7a8ba3);
 }
 
 .menu-button:hover {
-    background: linear-gradient(45deg, #5c6bc0, #7986cb);
+    background: linear-gradient(45deg, #7a8ba3, #9aabbc);
     transform: translateY(-3px);
-    box-shadow: 0 8px 25px rgba(92, 107, 192, 0.3);
+    box-shadow: 0 8px 25px rgba(122, 139, 163, 0.3);
 }
 
 .menu-button:active {
@@ -280,11 +281,12 @@ h1, h2, h3 {
     background: linear-gradient(45deg, #b0bec5, #90a4ae);
     font-size: 20px;
     padding: 12px 20px;
+    transition: all 0.3s ease;
 }
 
 .theme-button:hover {
     background: linear-gradient(45deg, #90a4ae, #b0bec5);
-    transform: scale(1.1);
+    transform: scale(1.05);
     box-shadow: 0 8px 25px rgba(144, 164, 174, 0.3);
 }
 
@@ -292,13 +294,13 @@ h1, h2, h3 {
 .footer {
     text-align: center;
     margin-top: 40px;
-    color: rgba(92, 107, 192, 0.8);
+    color: rgba(122, 139, 163, 0.8);
     font-size: 14px;
     padding: 20px;
-    background: rgba(92, 107, 192, 0.1);
+    background: rgba(122, 139, 163, 0.1);
     border-radius: 12px;
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(92, 107, 192, 0.2);
+    border: 1px solid rgba(122, 139, 163, 0.2);
     transition: all 0.3s ease;
 }
 
@@ -320,7 +322,7 @@ h1, h2, h3 {
 
 .dark-theme .lesson-card {
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-    border-left: 5px solid #667eea;
+    border-left: 5px solid #9aabbc;
     background: rgba(45, 52, 54, 0.95);
     color: #e0e0e0;
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -331,9 +333,9 @@ h1, h2, h3 {
 }
 
 .dark-theme .current-lesson {
-    border: 3px solid #667eea;
-    background: rgba(102, 126, 234, 0.2);
-    box-shadow: 0 8px 32px rgba(102, 126, 234, 0.4);
+    border: 3px solid #9aabbc;
+    background: rgba(154, 171, 188, 0.2);
+    box-shadow: 0 8px 32px rgba(154, 171, 188, 0.4);
 }
 
 /* Адаптивность для мобильных устройств */
@@ -394,10 +396,10 @@ h1, h2, h3 {
 /* Дополнительные анимации */
 @keyframes pulse {
     0%, 100% {
-        box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+        box-shadow: 0 8px 32px rgba(154, 171, 188, 0.3);
     }
     50% {
-        box-shadow: 0 8px 40px rgba(102, 126, 234, 0.5);
+        box-shadow: 0 8px 40px rgba(154, 171, 188, 0.5);
     }
 }
 
