@@ -82,6 +82,20 @@ h1, h2, h3 {
     animation: pulse 2s infinite;
 }
 
+.current-badge {
+    display: inline-block;
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+}
+
 .no-lesson {
     color: #888;
     font-style: italic;
@@ -329,6 +343,11 @@ h1, h2, h3 {
     border: 3px solid #667eea;
     background: rgba(102, 126, 234, 0.2);
     box-shadow: 0 8px 32px rgba(102, 126, 234, 0.4);
+}
+
+.dark-theme .current-badge {
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.5);
 }
 
 /* Адаптивность для мобильных устройств */
