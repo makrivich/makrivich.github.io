@@ -330,14 +330,22 @@ async function loadSchedule() {
             const time = scheduleTimes[lesson] || '-';
 
             let isCurrentLesson = false;
+            let isPastLesson = false;
             if (!isSunday && isCurrentDay && time !== '-') {
                 const [start, end] = time.split('–').map(t => {
                     const [h, m] = t.split(':').map(Number);
                     return h * 60 + m;
                 });
-                if (currentTime >= start && currentTime <= end) {
+                if (currentTime >= start && currentTime < end) {
                     isCurrentLesson = true;
+                } else if (currentTime >= end) {
+                    isPastLesson = true;
                 }
+            }
+
+            // Пропускаем прошедшие уроки
+            if (isPastLesson && !isCurrentLesson) {
+                continue;
             }
 
             const subject = data[i][classIndex] || 'Нет урока';
@@ -365,8 +373,10 @@ async function loadSchedule() {
                     les.rooms.forEach((room, m) => {
                         const baseDisplayRoom = /^\d+$/.test(room) ? room + ' кабинет' : room;
                         const displayRoom = prefix + baseDisplayRoom;
+                        const currentBadge = isCurrentLesson ? '<span class="current-badge">Идёт сейчас</span>' : '';
                         html += `
                             <div class="lesson-card ${isCurrentLesson ? 'current-lesson' : ''}" style="--index: ${indexCounter}">
+                                ${currentBadge}
                                 ${lesson}<br>
                                 ${displayName}<br>
                                 ${time}<br>
@@ -376,8 +386,10 @@ async function loadSchedule() {
                         indexCounter += 0.1; // Для анимации
                     });
                     if (les.rooms.length === 0) {
+                        const currentBadge = isCurrentLesson ? '<span class="current-badge">Идёт сейчас</span>' : '';
                         html += `
                             <div class="lesson-card ${isCurrentLesson ? 'current-lesson' : ''}" style="--index: ${indexCounter}">
+                                ${currentBadge}
                                 ${lesson}<br>
                                 ${displayName}<br>
                                 ${time}${commentHtml}
@@ -406,14 +418,22 @@ async function loadSchedule() {
             const time = scheduleTimes[lesson] || '-';
 
             let isCurrentLesson = false;
+            let isPastLesson = false;
             if (!isSunday && isCurrentDay && time !== '-') {
                 const [start, end] = time.split('–').map(t => {
                     const [h, m] = t.split(':').map(Number);
                     return h * 60 + m;
                 });
-                if (currentTime >= start && currentTime <= end) {
+                if (currentTime >= start && currentTime < end) {
                     isCurrentLesson = true;
+                } else if (currentTime >= end) {
+                    isPastLesson = true;
                 }
+            }
+
+            // Пропускаем прошедшие уроки
+            if (isPastLesson && !isCurrentLesson) {
+                continue;
             }
 
             if (!lesson) continue;
@@ -436,12 +456,14 @@ async function loadSchedule() {
                     const matchingRooms = les.rooms.filter(room => cabinets.includes(room.toLowerCase()));
                     if (isInitialsMatch && (matchingRooms.length > 0 || les.rooms.length === 0)) {
                         foundLessons = true;
+                        const currentBadge = isCurrentLesson ? '<span class="current-badge">Идёт сейчас</span>' : '';
                         if (matchingRooms.length > 0) {
                             matchingRooms.forEach(room => {
                                 const baseDisplayRoom = /^\d+$/.test(room) ? room + ' кабинет' : room;
                                 const displayRoom = prefix + baseDisplayRoom;
                                 html += `
                                     <div class="lesson-card ${isCurrentLesson ? 'current-lesson' : ''}" style="--index: ${indexCounter}">
+                                        ${currentBadge}
                                         ${lesson}<br>
                                         ${displayName}<br>
                                         ${time}<br>
@@ -454,6 +476,7 @@ async function loadSchedule() {
                         } else {
                             html += `
                                 <div class="lesson-card ${isCurrentLesson ? 'current-lesson' : ''}" style="--index: ${indexCounter}">
+                                    ${currentBadge}
                                     ${lesson}<br>
                                     ${displayName}<br>
                                     ${time}<br>
@@ -464,11 +487,13 @@ async function loadSchedule() {
                         }
                     } else if (!isInitialsMatch && matchingRooms.length > 0) {
                         foundLessons = true;
+                        const currentBadge = isCurrentLesson ? '<span class="current-badge">Идёт сейчас</span>' : '';
                         matchingRooms.forEach(room => {
                             const baseDisplayRoom = /^\d+$/.test(room) ? room + ' кабинет' : room;
                             const displayRoom = prefix + baseDisplayRoom;
                             html += `
                                 <div class="lesson-card ${isCurrentLesson ? 'current-lesson' : ''}" style="--index: ${indexCounter}">
+                                    ${currentBadge}
                                     ${lesson}<br>
                                     ${displayName}<br>
                                     ${time}<br>
