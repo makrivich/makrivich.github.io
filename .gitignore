@@ -28,22 +28,24 @@ venv/
 .vscode/
 .idea/
 
+# System files
+.DS_Store
+Thumbs.db
+
 # Coverage
 coverage/
 htmlcov/
 .coverage
 
-# Distribution / build artifacts
+# Build directories
 dist/
 build/
 target/
 .gradle/
+
+# Python specific
 .mypy_cache/
 .pytest_cache/
-
-# System files
-.DS_Store
-Thumbs.db
 
 # Compressed files
 *.zip
