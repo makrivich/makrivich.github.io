@@ -1,4 +1,3 @@
-<script>
 // URL для расписания по дням недели
 const SCHEDULE_URLS = {
     'Понедельник': 'https://docs.google.com/spreadsheets/d/1lHa4KM1pvTWCQpyvIAUUmJ8OlcNPh_LD/export?format=csv',
@@ -633,4 +632,3 @@ async function init() {
 }
 
 init();
-</script>
