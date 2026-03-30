@@ -219,7 +219,6 @@ async function fetchTeacherCabinetData() {
     return teacherCabinetMap;
 }
 
-// УЛУЧШЕННАЯ функция с реальным текущим временем
 function getDayWithTimeShift() {
     const now = new Date();
     const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
@@ -228,30 +227,25 @@ function getDayWithTimeShift() {
     let dayIndex = utcPlus5Time.getDay();
     const hours = utcPlus5Time.getHours();
     const minutes = utcPlus5Time.getMinutes();
-    const realCurrentTime = hours * 60 + minutes; // всегда текущее время!
 
     if (dayIndex === 0) {
         return {
             displayDayIndex: 1,
             isSunday: true,
-            date: utcPlus5Time,
-            currentTime: realCurrentTime
+            date: utcPlus5Time
         };
     }
 
     const isAfter16 = (hours > 16) || (hours === 16 && minutes >= 0);
-    let displayDate = new Date(utcPlus5Time);
-
     if (isAfter16) {
         dayIndex = (dayIndex + 1) % 7;
-        displayDate.setDate(displayDate.getDate() + 1);
+        utcPlus5Time.setDate(utcPlus5Time.getDate() + 1);
     }
 
     return {
         displayDayIndex: dayIndex,
         isSunday: false,
-        date: displayDate,
-        currentTime: realCurrentTime
+        date: utcPlus5Time
     };
 }
 
@@ -281,7 +275,6 @@ async function loadClasses() {
     });
 }
 
-// ГЛАВНАЯ ФУНКЦИЯ (исправлена — теперь подсветка работает и обновляется автоматически)
 async function loadSchedule() {
     const modeSelect = document.getElementById('mode-select');
     const classSelect = document.getElementById('class-select');
@@ -308,12 +301,12 @@ async function loadSchedule() {
     }
 
     const headerRow = data[0] || [];
+
     const scheduleTimes = selectedDay === 'Суббота' ? SCHEDULE_SATURDAY : SCHEDULE_WEEKDAYS;
-    const dayInfo = getDayWithTimeShift();
-    const currentTime = dayInfo.currentTime;
-    const isSunday = dayInfo.isSunday;
+    const { date, isSunday } = getDayWithTimeShift();
+    const currentTime = date.getHours() * 60 + date.getMinutes();
     const dayNames = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
-    const isCurrentDay = selectedDay === dayNames[dayInfo.displayDayIndex];
+    const isCurrentDay = selectedDay === dayNames[getDayWithTimeShift().displayDayIndex];
 
     let html = `<h2>${selectedDay}, ${mode === 'class' ? selectedClass : `ID ${selectedId}`}</h2>`;
     if (isSunday && selectedDay === 'Понедельник') {
@@ -338,20 +331,12 @@ async function loadSchedule() {
 
             let isCurrentLesson = false;
             if (!isSunday && isCurrentDay && time !== '-') {
-                // УЛУЧШЕННЫЙ парсинг времени (работает с любым тире)
-                const timeParts = time.split(/[–-—]/);
-                if (timeParts.length === 2) {
-                    const startStr = timeParts[0].trim();
-                    const endStr = timeParts[1].trim();
-                    const start = startStr.split(':').map(Number);
-                    const end = endStr.split(':').map(Number);
-                    if (start.length === 2 && end.length === 2) {
-                        const startMin = start[0] * 60 + start[1];
-                        const endMin = end[0] * 60 + end[1];
-                        if (currentTime >= startMin && currentTime < endMin) {
-                            isCurrentLesson = true;
-                        }
-                    }
+                const [start, end] = time.split('–').map(t => {
+                    const [h, m] = t.split(':').map(Number);
+                    return h * 60 + m;
+                });
+                if (currentTime >= start && currentTime < end) {
+                    isCurrentLesson = true;
                 }
             }
 
@@ -368,37 +353,38 @@ async function loadSchedule() {
                 `;
                 indexCounter++;
             } else {
-                lessons.forEach((les) => {
+                lessons.forEach((les, k) => {
                     let displayName = les.subjectName;
                     if (les.comment.length > 0) {
                         displayName += ' ' + les.comment.join(' ');
+                        les.comment = []; // Clear comment since it's now part of subjectName
                     }
                     displayName += (les.initials ? ` (${les.initials})` : '');
-                    const currentBadge = isCurrentLesson ? '<span class="current-badge">Идёт сейчас</span>' : '';
+                    const commentHtml = ''; // No separate comment now
                     const prefix = les.onlyCertainRooms ? 'только ' : '';
-
-                    if (les.rooms.length > 0) {
-                        les.rooms.forEach(room => {
-                            const baseDisplayRoom = /^\d+$/.test(room) ? room + ' кабинет' : room;
-                            const displayRoom = prefix + baseDisplayRoom;
-                            html += `
-                                <div class="lesson-card ${isCurrentLesson ? 'current-lesson' : ''}" style="--index: ${indexCounter}">
-                                    ${currentBadge}
-                                    ${lesson}<br>
-                                    ${displayName}<br>
-                                    ${time}<br>
-                                    ${displayRoom}
-                                </div>
-                            `;
-                            indexCounter += 0.1;
-                        });
-                    } else {
+                    les.rooms.forEach((room, m) => {
+                        const baseDisplayRoom = /^\d+$/.test(room) ? room + ' кабинет' : room;
+                        const displayRoom = prefix + baseDisplayRoom;
+                        const currentBadge = isCurrentLesson ? '<span class="current-badge">Идёт сейчас</span>' : '';
                         html += `
                             <div class="lesson-card ${isCurrentLesson ? 'current-lesson' : ''}" style="--index: ${indexCounter}">
                                 ${currentBadge}
                                 ${lesson}<br>
                                 ${displayName}<br>
-                                ${time}
+                                ${time}<br>
+                                ${displayRoom}${commentHtml}
+                            </div>
+                        `;
+                        indexCounter += 0.1; // Для анимации
+                    });
+                    if (les.rooms.length === 0) {
+                        const currentBadge = isCurrentLesson ? '<span class="current-badge">Идёт сейчас</span>' : '';
+                        html += `
+                            <div class="lesson-card ${isCurrentLesson ? 'current-lesson' : ''}" style="--index: ${indexCounter}">
+                                ${currentBadge}
+                                ${lesson}<br>
+                                ${displayName}<br>
+                                ${time}${commentHtml}
                             </div>
                         `;
                         indexCounter += 0.1;
@@ -406,6 +392,7 @@ async function loadSchedule() {
                 });
             }
         }
+
     } else { // mode 'id'
         const teacherCabinetData = await fetchTeacherCabinetData();
         if (!teacherCabinetData || !teacherCabinetData[selectedId]) {
@@ -424,19 +411,12 @@ async function loadSchedule() {
 
             let isCurrentLesson = false;
             if (!isSunday && isCurrentDay && time !== '-') {
-                const timeParts = time.split(/[–-—]/);
-                if (timeParts.length === 2) {
-                    const startStr = timeParts[0].trim();
-                    const endStr = timeParts[1].trim();
-                    const start = startStr.split(':').map(Number);
-                    const end = endStr.split(':').map(Number);
-                    if (start.length === 2 && end.length === 2) {
-                        const startMin = start[0] * 60 + start[1];
-                        const endMin = end[0] * 60 + end[1];
-                        if (currentTime >= startMin && currentTime < endMin) {
-                            isCurrentLesson = true;
-                        }
-                    }
+                const [start, end] = time.split('–').map(t => {
+                    const [h, m] = t.split(':').map(Number);
+                    return h * 60 + m;
+                });
+                if (currentTime >= start && currentTime < end) {
+                    isCurrentLesson = true;
                 }
             }
 
@@ -451,15 +431,16 @@ async function loadSchedule() {
                     let displayName = les.subjectName;
                     if (les.comment.length > 0) {
                         displayName += ' ' + les.comment.join(' ');
+                        les.comment = [];
                     }
                     displayName += (les.initials ? ` (${les.initials})` : '');
-                    const currentBadge = isCurrentLesson ? '<span class="current-badge">Идёт сейчас</span>' : '';
+                    const commentHtml = '';
                     const prefix = les.onlyCertainRooms ? 'только ' : '';
                     const isInitialsMatch = initials && les.initials === initials;
                     const matchingRooms = les.rooms.filter(room => cabinets.includes(room.toLowerCase()));
-
-                    if ((isInitialsMatch && (matchingRooms.length > 0 || les.rooms.length === 0)) || (!isInitialsMatch && matchingRooms.length > 0)) {
+                    if (isInitialsMatch && (matchingRooms.length > 0 || les.rooms.length === 0)) {
                         foundLessons = true;
+                        const currentBadge = isCurrentLesson ? '<span class="current-badge">Идёт сейчас</span>' : '';
                         if (matchingRooms.length > 0) {
                             matchingRooms.forEach(room => {
                                 const baseDisplayRoom = /^\d+$/.test(room) ? room + ' кабинет' : room;
@@ -471,7 +452,7 @@ async function loadSchedule() {
                                         ${displayName}<br>
                                         ${time}<br>
                                         ${headerRow[j]}<br>
-                                        ${displayRoom}
+                                        ${displayRoom}${commentHtml}
                                     </div>
                                 `;
                                 indexCounter += 0.1;
@@ -483,11 +464,29 @@ async function loadSchedule() {
                                     ${lesson}<br>
                                     ${displayName}<br>
                                     ${time}<br>
-                                    ${headerRow[j]}
+                                    ${headerRow[j]}${commentHtml}
                                 </div>
                             `;
                             indexCounter += 0.1;
                         }
+                    } else if (!isInitialsMatch && matchingRooms.length > 0) {
+                        foundLessons = true;
+                        const currentBadge = isCurrentLesson ? '<span class="current-badge">Идёт сейчас</span>' : '';
+                        matchingRooms.forEach(room => {
+                            const baseDisplayRoom = /^\d+$/.test(room) ? room + ' кабинет' : room;
+                            const displayRoom = prefix + baseDisplayRoom;
+                            html += `
+                                <div class="lesson-card ${isCurrentLesson ? 'current-lesson' : ''}" style="--index: ${indexCounter}">
+                                    ${currentBadge}
+                                    ${lesson}<br>
+                                    ${displayName}<br>
+                                    ${time}<br>
+                                    ${headerRow[j]}<br>
+                                    ${displayRoom}${commentHtml}
+                                </div>
+                            `;
+                            indexCounter += 0.1;
+                        });
                     }
                 });
             }
@@ -499,16 +498,6 @@ async function loadSchedule() {
     }
 
     scheduleContainer.innerHTML = html;
-}
-
-// Автообновление расписания каждые 60 секунд (чтобы текущий урок всегда подсвечивался)
-function startAutoRefresh() {
-    setInterval(() => {
-        const container = document.getElementById('schedule-container');
-        if (container && container.querySelector('.lesson-card')) {
-            loadSchedule();
-        }
-    }, 60000);
 }
 
 function toggleMode() {
@@ -619,16 +608,6 @@ async function init() {
     await loadClasses();
     updateCurrentTime();
     setInterval(updateCurrentTime, 60000);
-
-    // Автообновление подсветки текущего урока
-    startAutoRefresh();
-
-    // Автоматически выбираем текущий день при загрузке
-    const dayInfo = getDayWithTimeShift();
-    const dayNames = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
-    document.getElementById('day-select').value = dayNames[dayInfo.displayDayIndex] || 'Понедельник';
-
-    loadSchedule();
 }
 
 init();
