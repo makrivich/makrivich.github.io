@@ -335,6 +335,10 @@ h1, h2, h3 {
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+.dark-theme .lesson-card.no-lesson {
+    color: #aaa;
+}
+
 .dark-theme .lesson-card:hover {
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
 }
