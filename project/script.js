@@ -330,7 +330,6 @@ async function loadSchedule() {
             const time = scheduleTimes[lesson] || '-';
 
             let isCurrentLesson = false;
-            let isPastLesson = false;
             if (!isSunday && isCurrentDay && time !== '-') {
                 const [start, end] = time.split('–').map(t => {
                     const [h, m] = t.split(':').map(Number);
@@ -338,14 +337,7 @@ async function loadSchedule() {
                 });
                 if (currentTime >= start && currentTime < end) {
                     isCurrentLesson = true;
-                } else if (currentTime >= end) {
-                    isPastLesson = true;
                 }
-            }
-
-            // Пропускаем прошедшие уроки
-            if (isPastLesson && !isCurrentLesson) {
-                continue;
             }
 
             const subject = data[i][classIndex] || 'Нет урока';
@@ -418,7 +410,6 @@ async function loadSchedule() {
             const time = scheduleTimes[lesson] || '-';
 
             let isCurrentLesson = false;
-            let isPastLesson = false;
             if (!isSunday && isCurrentDay && time !== '-') {
                 const [start, end] = time.split('–').map(t => {
                     const [h, m] = t.split(':').map(Number);
@@ -426,14 +417,7 @@ async function loadSchedule() {
                 });
                 if (currentTime >= start && currentTime < end) {
                     isCurrentLesson = true;
-                } else if (currentTime >= end) {
-                    isPastLesson = true;
                 }
-            }
-
-            // Пропускаем прошедшие уроки
-            if (isPastLesson && !isCurrentLesson) {
-                continue;
             }
 
             if (!lesson) continue;
