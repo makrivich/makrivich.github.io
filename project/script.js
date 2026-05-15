@@ -1,3 +1,7 @@
+// Кэш для данных расписания
+const scheduleCache = {};
+const CACHE_TTL = 5 * 60 * 1000; // 5 минут
+
 // URL для расписания по дням недели
 const SCHEDULE_URLS = {
     'Понедельник': 'https://docs.google.com/spreadsheets/d/1lHa4KM1pvTWCQpyvIAUUmJ8OlcNPh_LD/export?format=csv',
@@ -10,6 +14,10 @@ const SCHEDULE_URLS = {
 
 // URL для таблицы с ID/ФИО/инициалами/кабинетами
 const TEACHER_CABINET_URL = 'https://docs.google.com/spreadsheets/d/1UvKBhlXNfwll1DnY5wwxitAvzb-Fq4X1QbVCBAg0Wmw/export?format=csv';
+
+// Кэш для данных учителей
+let teacherCabinetCache = null;
+let teacherCabinetCacheTime = 0;
 
 // Расписание звонков
 const SCHEDULE_WEEKDAYS = {
@@ -160,15 +168,31 @@ function getLessonParts(subject) {
     return lessons;
 }
 
-async function fetchSchedule(url) {
+async function fetchSchedule(url, dayName = null) {
+    // Проверка кэша
+    const now = Date.now();
+    if (dayName && scheduleCache[dayName] && (now - scheduleCache[dayName].time) < CACHE_TTL) {
+        console.log(`Кэш для ${dayName}: используем закэшированные данные`);
+        return scheduleCache[dayName].data;
+    }
+    
     try {
         const response = await fetch(url);
         if (!response.ok) {
             throw new Error('Не удалось загрузить данные: ' + response.status);
         }
         const text = await response.text();
-        console.log('Raw CSV:', text);
         const data = parseCSV(text);
+        
+        // Сохранение в кэш
+        if (dayName) {
+            scheduleCache[dayName] = {
+                data: data,
+                time: now
+            };
+            console.log(`Кэш для ${dayName}: данные обновлены`);
+        }
+        
         return data;
     } catch (error) {
         console.error('Ошибка загрузки данных:', error);
@@ -206,6 +230,13 @@ function parseCSV(text) {
 }
 
 async function fetchTeacherCabinetData() {
+    const now = Date.now();
+    // Проверка кэша (5 минут)
+    if (teacherCabinetCache && (now - teacherCabinetCacheTime) < CACHE_TTL) {
+        console.log('Кэш учителей: используем закэшированные данные');
+        return teacherCabinetCache;
+    }
+    
     const data = await fetchSchedule(TEACHER_CABINET_URL);
     if (!data) return null;
     const teacherCabinetMap = {};
@@ -216,6 +247,12 @@ async function fetchTeacherCabinetData() {
             teacherCabinetMap[id] = { initials, cabinets };
         }
     }
+    
+    // Сохранение в кэш
+    teacherCabinetCache = teacherCabinetMap;
+    teacherCabinetCacheTime = now;
+    console.log('Кэш учителей: данные обновлены');
+    
     return teacherCabinetMap;
 }
 
@@ -255,8 +292,15 @@ async function loadClasses() {
 
     const classes = new Set();
 
-    for (const day in SCHEDULE_URLS) {
-        const data = await fetchSchedule(SCHEDULE_URLS[day]);
+    // Параллельная загрузка всех дней
+    const fetchPromises = Object.keys(SCHEDULE_URLS).map(day => 
+        fetchSchedule(SCHEDULE_URLS[day], day)
+    );
+    
+    const results = await Promise.all(fetchPromises);
+    
+    results.forEach((data, index) => {
+        const day = Object.keys(SCHEDULE_URLS)[index];
         if (data && data[0]) {
             const headerRow = data[0];
             for (let i = 1; i < headerRow.length; i++) {
@@ -265,7 +309,7 @@ async function loadClasses() {
                 }
             }
         }
-    }
+    });
 
     classes.forEach(className => {
         const option = document.createElement('option');
@@ -294,7 +338,7 @@ async function loadSchedule() {
 
     scheduleContainer.innerHTML = '<p class="loading">Подождите, расписание загружается...</p>';
 
-    const data = await fetchSchedule(SCHEDULE_URLS[selectedDay]);
+    const data = await fetchSchedule(SCHEDULE_URLS[selectedDay], selectedDay);
     if (!data) {
         scheduleContainer.innerHTML = '<p class="error">Не удалось загрузить расписание</p>';
         return;
